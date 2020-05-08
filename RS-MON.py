@@ -114,7 +114,7 @@ class cycle_tx():
         self.second = 0
         btn_cycle = Button(window, text="Цикл", command = self.serial_tx_cycle).place(x=115, y=240)
         btn_stop = Button(window, text="Стоп", command = self.serial_stop).place(x=215, y=240)
-        
+        self.time = None
     #Метод цикличной отправки/приема пакетов и отображения полученных данных
     def serial_tx_cycle(self): 
         ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
@@ -137,6 +137,8 @@ class cycle_tx():
         if self.time is not None:
             window.after_cancel(self.time)
             self.time = None
+        else:
+            return
             
 #Функция отправляет заданное количество посылок, берет значения из поля тхт  
 def serial_tx(): 
@@ -166,18 +168,15 @@ def serial_rx(ser, parcel_tx):
     display_data_rx = ser.read(20)      #читаем 20 байт данных с порта
     parcel_hex = display_data_rx.hex()  #Переводим полученные данные в HEX-формат (убираем /x)
     parcel_hex = parcel_hex[18:]              #Удаляем отправленную посылку из принятых данных
-    
     parcel_rx_up = parcel_hex.upper()   #Переводим все буквы в верхний регистр (для удобства)
-    lbl_parcel_rx = Label(window, text = parcel_rx_up).place(x=200, y=320) #Выводим в пользовательский интерфейс
+    lbl_parcel_rx = Label(window, text = "                                 ")
+    lbl_parcel_rx.place(x=200, y=320)
+    lbl_parcel_rx = Label(window, text = parcel_rx_up) #Выводим в пользовательский интерфейс
+    lbl_parcel_rx.place(x=200, y=320) 
     ser.close()
-    
     rx_dc1 = rx_dc(parcel_rx_up, parcel_tx)
     rx_dc1.crc_plata(parcel_rx_up)
-    
-    
-
-    
-    
+   
     
 #Класс дешифровки принятых данных и вывода их в поле "Принятые данные"
 class rx_dc():
@@ -194,11 +193,15 @@ class rx_dc():
         self.lbl_PXIN.place(x=5, y=125)
 
         commands_1 = ('01', '02', '04', '06', '19', '14', '1A', '1B')
+        if parcel_rx_up[4:6] == '':
+            self.lbl_number_of_plate = Label(lbl_rx_data_dc, text = "Нет связи с платой!!!\n                \n                \n                \n                  \n                \n                 ", foreground = 'red')
+            self.lbl_number_of_plate.place(x=5, y=25)
+            return
         number_of_plate = parcel_rx_up[4:6]
-        self.lbl_number_of_plate = Label(lbl_rx_data_dc, text = ("Адрес платы: " + str(int(number_of_plate, 16)).zfill(2)))
+        self.lbl_number_of_plate = Label(lbl_rx_data_dc, text = ("Адрес платы: " + str(int(number_of_plate, 16)).zfill(2) + '      '))
         self.lbl_number_of_plate.place(x=5, y=25)
         komanda_tx = parcel_tx[10:12]
-        if komanda_tx == '00':
+        if komanda_tx == '00' :
             version_po = int(parcel_rx_up[8:10], 16)
             self.lbl_version_po = Label(lbl_rx_data_dc, text = ("Версия ПО:  " + str(version_po) + "     "))
             self.lbl_version_po.place(x=5, y=45)
@@ -243,7 +246,7 @@ class rx_dc():
             elif komanda_rx == '25':
                 self.lbl_komanda_dc['text'] = "переключение     \nинтерфейсов      \nCAN->RS, RS->CAN  "
                 if self.PXIN == '00':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "CAN ON      ", foreground = 'green')
+                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "CAN ON          ", foreground = 'green')
                     self.lbl_PXIN.place(x=5, y=125)
                 elif self.PXIN == '01':
                     self.lbl_PXIN = Label(lbl_rx_data_dc, text = "RS-485 ON       ", foreground = 'green')
@@ -326,22 +329,20 @@ class rx_dc():
             Impuls_out = ' R+     '
         elif Rminus == impuls_bits:
             Impuls_out = ' R-     '
-        print(Interface)
         self.PXIN_state = _5v_bit + Interface + Impuls_out
-        print('Интерфейс', Interface)
         return (self.PXIN_state)
     
     def komanda_03_dc(parcel_rx_up):
-        lbl_komanda_dc = Label(lbl_rx_data_dc, text = "выбор счит.\nканала таймера").place(x=5, y=65)
+        lbl_komanda_dc = Label(lbl_rx_data_dc, text = "выбор счит.   \nканала таймера   ").place(x=5, y=65)
        
 
     def crc_plata(self, parcel_rx_up): #функция вычисляет CRC принятой посылки и выводит значение проверки
         crc256_rx = parcel_rx_up[12:14]
         crc256_chk = hex(sum(bytes.fromhex(parcel_rx_up[0:12])) % 256)[2:] #Вычисляем контрольную сумму по модулю 256, убираем 0x перед шестнадцатеричным числом
         if crc256_rx == crc256_chk.upper():
-            lbl_crc = Label(lbl_rx_data_dc, text = "CRC: ОК", foreground = 'Green').place(x=5, y=5)
+            lbl_crc = Label(lbl_rx_data_dc, text = "CRC: ОК   ", foreground = 'Green').place(x=5, y=5)
         else:
-            lbl_crc = Label(lbl_rx_data_dc, text = "CRC: BAD", foreground = 'Red').place(x=5, y=5)
+            lbl_crc = Label(lbl_rx_data_dc, text = "CRC: BAD  ", foreground = 'Red').place(x=5, y=5)
     
 
 
@@ -349,7 +350,7 @@ class rx_dc():
 
 #Main program
 window = Tk()  
-window.title("Программа для проверки доработок Incotex")  
+window.title("Программа для проверки доработок Incotex (by Jamigo)")  
 window.geometry('600x500')
 window.bind_all("<Key>", _onKeyRelease, "+") #Включаем подержку нажатий клавиш Ctr-C, Ctr-V, Ctr-X
 
@@ -359,18 +360,18 @@ lbl_inter = LabelFrame(window, text='Интерфейсы')
 lbl_inter.place(x=5, y=0, width = 200)
 rad1 = Radiobutton(lbl_inter, text='CAN', value=1, variable=sel_interface)
 rad1.pack(side=LEFT)
-rad2 = Radiobutton(lbl_inter, text='RS-485', value=2, variable=sel_interface)
-rad2.pack(side=LEFT)  
+#rad2 = Radiobutton(lbl_inter, text='RS-485', value=2, variable=sel_interface)
+#rad2.pack(side=LEFT)  
 
 sel_CRC = IntVar()
 lbl_CRC = LabelFrame(window, text = "CRC")
 lbl_CRC.place(x = 5, y=50, width = 300)
 rad_controller = Radiobutton(lbl_CRC, text='Контроллер', value=1, variable=sel_CRC)
 rad_controller.pack(side=LEFT)
-rad_counter = Radiobutton(lbl_CRC, text='Счетчик', value=2, variable=sel_CRC)
-rad_counter.pack(side=LEFT)                
-rad_wocrc = Radiobutton(lbl_CRC, text='Без CRC', value=3, variable=sel_CRC)
-rad_wocrc.pack(side=LEFT)
+#rad_counter = Radiobutton(lbl_CRC, text='Счетчик', value=2, variable=sel_CRC)
+#rad_counter.pack(side=LEFT)                
+#rad_wocrc = Radiobutton(lbl_CRC, text='Без CRC', value=3, variable=sel_CRC)
+#rad_wocrc.pack(side=LEFT)
 sel_CRC.set(1)
 
 lbl0 = Label(window, text = "Выберите COM-порт:").place(x=15, y=100)

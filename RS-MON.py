@@ -17,6 +17,15 @@ v_interface_4 = '04'
 v_interface_5 = '05'
 v_interface_6 = '06'
 
+k_OPT_inter = '1A'
+v_opt_inter_0 = '00'
+v_opt_inter_1 = '01'
+v_opt_inter_2 = '02'
+v_opt_inter_3 = '03'
+v_opt_inter_4 = '04'
+v_opt_inter_5 = '05'
+v_opt_inter_6 = '06'
+
 k_Impuls_out = '02'
 v_Aplus = '01' 
 v_Aminus = '03'
@@ -219,25 +228,43 @@ cycle = cycle_tx() # активируем класс с кнопками "Цик
 lbl3 = Label(window, text = 'Отправленные данные:').place(x=15, y=290)
 lbl4 = Label(window, text = 'Принятые данные:').place(x=15, y=320)
 
-btn_Aplus = Button(window, text="А+ ", command = lambda: serial_tx_code(Parcel(k_Impuls_out,v_Aplus))).place(x=15, y=350)
-btn_Aminus = Button(window, text="А- ", command = lambda: serial_tx_code(Parcel(k_Impuls_out,v_Aminus))).place(x=15, y=380)
-btn_Rplus = Button(window, text="R+ ", command = lambda: serial_tx_code(Parcel(k_Impuls_out,v_Rplus))).place(x=15, y=410)
-btn_Rminus = Button(window, text="R- ", command = lambda: serial_tx_code(Parcel(k_Impuls_out,v_Rminus))).place(x=15, y=440)
+lbl_optic = LabelFrame(window, text = "Опт. интерфейсы")
+lbl_optic.place(x = 420, y=180, width = 130, heigh = 150)
+btn_CAN_01 = Button(lbl_optic, text="Opto1 ", command = lambda: serial_tx_code(Parcel(k_OPT_inter, v_opt_inter_1)), width = 5).place(x=5, y=0)
+btn_CAN_02 = Button(lbl_optic, text="Opto2 ", command = lambda: serial_tx_code(Parcel(k_OPT_inter, v_opt_inter_2)), width = 5).place(x=5, y=30)
+btn_CAN_03 = Button(lbl_optic, text="Opto3 ", command = lambda: serial_tx_code(Parcel(k_OPT_inter, v_opt_inter_3)), width = 5).place(x=5, y=60)
+btn_CAN_04 = Button(lbl_optic, text="Opto4 ", command = lambda: serial_tx_code(Parcel(k_OPT_inter, v_opt_inter_4)), width = 5).place(x=5, y=90)
+btn_CAN_05 = Button(lbl_optic, text="Opto5 ", command = lambda: serial_tx_code(Parcel(k_OPT_inter, v_opt_inter_5)), width = 5).place(x=65, y=0)
+btn_CAN_06 = Button(lbl_optic, text="Opto6 ", command = lambda: serial_tx_code(Parcel(k_OPT_inter, v_opt_inter_6)), width = 5).place(x=65, y=30)
+btn_CAN_06 = Button(lbl_optic, text="OFF ", command = lambda: serial_tx_code(Parcel(k_OPT_inter, v_opt_inter_0)), width = 5).place(x=65, y=60)
 
-btn_CAN_ON = Button(window, text="CAN_ON ", command = lambda: serial_tx_code(Parcel(k_Interface, v_CAN_ON))).place(x=150, y=350)
-btn_RS485_ON = Button(window, text="RS485_ON ", command = lambda: serial_tx_code(Parcel(k_Interface, v_RS485_ON))).place(x=150, y=380)
-btn_opros = Button(window, text="Опросить ", command = lambda: serial_tx_code(Parcel(Opros,Opros))).place(x=150, y=440)
+lbl_impuls_out = LabelFrame(window, text = "Имп. выходы")
+lbl_impuls_out.place(x = 15, y=350, width = 120, heigh = 145)
+btn_Aplus = Button(lbl_impuls_out, text="А+ ", command = lambda: serial_tx_code(Parcel(k_Impuls_out,v_Aplus))).place(x=5, y=0)
+btn_Aminus = Button(lbl_impuls_out, text="А- ", command = lambda: serial_tx_code(Parcel(k_Impuls_out,v_Aminus))).place(x=5, y=30)
+btn_Rplus = Button(lbl_impuls_out, text="R+ ", command = lambda: serial_tx_code(Parcel(k_Impuls_out,v_Rplus))).place(x=5, y=60)
+btn_Rminus = Button(lbl_impuls_out, text="R- ", command = lambda: serial_tx_code(Parcel(k_Impuls_out,v_Rminus))).place(x=5, y=90)
 
-btn_CAN_01 = Button(window, text="CAN1 ", command = lambda: serial_tx_code(Parcel(k_CAN_inter, v_interface_1)), width = 5).place(x=285, y=350)
-btn_CAN_02 = Button(window, text="CAN2 ", command = lambda: serial_tx_code(Parcel(k_CAN_inter, v_interface_2)), width = 5).place(x=285, y=380)
-btn_CAN_03 = Button(window, text="CAN3 ", command = lambda: serial_tx_code(Parcel(k_CAN_inter, v_interface_3)), width = 5).place(x=285, y=410)
-btn_CAN_04 = Button(window, text="CAN4 ", command = lambda: serial_tx_code(Parcel(k_CAN_inter, v_interface_4)), width = 5).place(x=285, y=440)
-btn_CAN_05 = Button(window, text="CAN5 ", command = lambda: serial_tx_code(Parcel(k_CAN_inter, v_interface_5)), width = 5).place(x=345, y=350)
-btn_CAN_06 = Button(window, text="CAN6 ", command = lambda: serial_tx_code(Parcel(k_CAN_inter, v_interface_6)), width = 5).place(x=345, y=380)
+lbl_interface = LabelFrame(window, text = "Интер. CAN-RS")
+lbl_interface.place(x = 150, y=350, width = 120, heigh = 145)
+btn_CAN_ON = Button(lbl_interface, text="CAN_ON ", command = lambda: serial_tx_code(Parcel(k_Interface, v_CAN_ON))).place(x=5, y=0)
+btn_RS485_ON = Button(lbl_interface, text="RS485_ON ", command = lambda: serial_tx_code(Parcel(k_Interface, v_RS485_ON))).place(x=5, y=30)
+btn_opros = Button(lbl_interface, text="Опросить ", command = lambda: serial_tx_code(Parcel(Opros,Opros))).place(x=5, y=90)
 
-btn_CAN_OFF = Button(window, text="CAN_All_OFF ", command = lambda: serial_tx_code(Parcel(k_Inter_counter, v_CAN_OFF))).place(x=420, y=350)
-btn_CAN0_ON = Button(window, text="CAN0_ON ", command = lambda: serial_tx_code(Parcel(k_Inter_counter, v_CAN0_ON))).place(x=420, y=380)
-btn_CAN1_ON = Button(window, text="CAN1_ON ", command = lambda: serial_tx_code(k_Inter_counter, v_CAN1_ON)).place(x=420, y=410)
+lbl_CAN = LabelFrame(window, text = "CAN-плата")
+lbl_CAN.place(x = 285, y=350, width = 130, heigh = 145)
+btn_CAN_01 = Button(lbl_CAN, text="CAN1 ", command = lambda: serial_tx_code(Parcel(k_CAN_inter, v_interface_1)), width = 5).place(x=5, y=0)
+btn_CAN_02 = Button(lbl_CAN, text="CAN2 ", command = lambda: serial_tx_code(Parcel(k_CAN_inter, v_interface_2)), width = 5).place(x=5, y=30)
+btn_CAN_03 = Button(lbl_CAN, text="CAN3 ", command = lambda: serial_tx_code(Parcel(k_CAN_inter, v_interface_3)), width = 5).place(x=5, y=60)
+btn_CAN_04 = Button(lbl_CAN, text="CAN4 ", command = lambda: serial_tx_code(Parcel(k_CAN_inter, v_interface_4)), width = 5).place(x=5, y=90)
+btn_CAN_05 = Button(lbl_CAN, text="CAN5 ", command = lambda: serial_tx_code(Parcel(k_CAN_inter, v_interface_5)), width = 5).place(x=65, y=0)
+btn_CAN_06 = Button(lbl_CAN, text="CAN6 ", command = lambda: serial_tx_code(Parcel(k_CAN_inter, v_interface_6)), width = 5).place(x=65, y=30)
+
+lbl_counter = LabelFrame(window, text = "Инт. счетчик")
+lbl_counter.place(x = 420, y=350, width = 130, heigh = 145)
+btn_CAN_OFF = Button(lbl_counter, text="CAN_All_OFF ", command = lambda: serial_tx_code(Parcel(k_Inter_counter, v_CAN_OFF))).place(x=5, y=0)
+btn_CAN0_ON = Button(lbl_counter, text="CAN0_ON ", command = lambda: serial_tx_code(Parcel(k_Inter_counter, v_CAN0_ON))).place(x=5, y=30)
+btn_CAN1_ON = Button(lbl_counter, text="CAN1_ON ", command = lambda: serial_tx_code(Parcel(k_Inter_counter, v_CAN1_ON))).place(x=5, y=60)
 
 
 window.mainloop()

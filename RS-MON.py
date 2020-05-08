@@ -39,6 +39,7 @@ def serial_ports(): #Funcrion find all com-ports in Windows
             pass
     return result
 
+
 Aplus = '5555555500020100' 
 Aminus = '5555555500020300'
 Rplus = '5555555500020200'
@@ -48,6 +49,8 @@ RS485_ON = '5555555500190100'
 CAN_OFF = '55555555001B0000'
 CAN0_ON = '55555555001B0100'
 CAN1_ON = '55555555001B0200'
+Opros = '5555555500000000'
+
 connected = 0
 data=0
 amount = 0
@@ -55,47 +58,52 @@ stop = 0
 
 speeds = ['1200','2400', '4800', '9600', '19200', '38400', '57600', '115200']
 
+
+
 def serial_tx_cycle(): #Функция отправляет 1000 посылок, берет значения из поля тхт
-    ser = serial.Serial(combo.get(), combo1.get())
+    ser = serial.Serial(combo.get(), combo1.get(), timeout = 1)
     ser.write(controller_crc_function(txt.get()))
-    lbl_parcel_tx = Label(window, text = txt.get()).place(x=250, y=290)
+    lbl_parcel_tx = Label(window, text = txt.get()).place(x=200, y=290)
+    serial_rx(ser)
     if stop == False:
         window.after(1000, serial_tx_cycle)
     else:
-        ser.close()
+        ser.close(ser)
         return
 
 def serial_tx(): #Функция отправляет заданное количество посылок, берет значения из поля тхт
-    ser = serial.Serial(combo.get(), combo1.get())
+    ser = serial.Serial(combo.get(), combo1.get(), timeout = 1)
     amount = int(number_of_parcel.get())
+    parcel = str(txt.get())
+    lbl_parcel_tx = Label(window, text = 00000000000000)
+    lbl_parcel_tx = Label(window, text = txt.get()).place(x=200, y=290)
+    print(parcel)
     while amount != 0:
         ser.write(controller_crc_function(txt.get()))
-        display = txt.get()
-        lbl_parcel_tx = Label(window, text = 00000000000000)
-        lbl_parcel_tx = Label(window, text = display).place(x=250, y=290)
-        amount -=1
-        display_data_rx =ser.read(20)
-        print(display_data_rx)
-        
-        lbl_parcel_rx = Label(window, text = display_data_rx)
-    ser.close()
+        amount-=1
+        serial_rx(ser)
 
 def serial_tx_code(parcel): #Функция отправляет заранее определенный код
     ser = serial.Serial(combo.get(), combo1.get(), timeout = 1)
     amount = int(number_of_parcel.get())
-    while amount!=0:
+    lbl_parcel_tx = Label(window, text = 00000000000000)
+    lbl_parcel_tx = Label(window, text = parcel).place(x=200, y=290)
+    print(parcel)
+    while amount != 0:
         ser.write(controller_crc_function(parcel))
-        lbl_parcel_tx = Label(window, text = 00000000000000)
-        lbl_parcel_tx = Label(window, text = parcel).place(x=250, y=290)
         amount-=1
-        display_data_rx = ser.read(20)      #читаем 20 байт данных с порта
-        parcel_hex = display_data_rx.hex()  #Переводим полученные данные в HEX-формат (убираем /x)
-        parcel_hex = parcel_hex[18:]              #Удаляем отправленную посылку из принятых данных
-        parcel_rx_up = parcel_hex.upper()   #Переводим все буквы в верхний регистр (для удобства)
-        lbl_parcel_rx = Label(window, text = parcel_rx_up).place(x=250, y=320) #Выводим в пользовательский интерфейс
-    ser.close()
+        serial_rx(ser)
     
 
+def serial_rx(ser):
+    display_data_rx = ser.read(20)      #читаем 20 байт данных с порта
+    parcel_hex = display_data_rx.hex()  #Переводим полученные данные в HEX-формат (убираем /x)
+    parcel_hex = parcel_hex[18:]              #Удаляем отправленную посылку из принятых данных
+    parcel_rx_up = parcel_hex.upper()   #Переводим все буквы в верхний регистр (для удобства)
+    #lbl_parcel_rx = Label(window, text = 00000000000000).place(x=200, y=320)
+    lbl_parcel_rx = Label(window, text = parcel_rx_up).place(x=200, y=320) #Выводим в пользовательский интерфейс
+    ser.close()
+    
 def serial_stop(): #Функция отключает общение с COM-портом
     stop = True
    
@@ -159,9 +167,9 @@ menu.add_command(label="Вставить", command = lambda: txt.event_generate(
 menu.add_command(label="Вырезать", command = lambda: txt.event_generate("<<Cut>>"))
 txt.bind("<Button-3>", mouse_button3) #нажатие на правую клавишу вызывает функцию всплывающего меню
 
-btn_send = Button(window, text="Отправить", command = serial_tx).place(x=270, y=210)
-btn_cycle = Button(window, text="Цикл", command = serial_tx_cycle).place(x=370, y=210)
-btn_stop = Button(window, text="Стоп", command = serial_stop).place(x=470, y=210)
+btn_send = Button(window, text="Отправить", command = serial_tx).place(x=15, y=240)
+btn_cycle = Button(window, text="Цикл", command = serial_tx_cycle).place(x=115, y=240)
+btn_stop = Button(window, text="Стоп", command = serial_stop).place(x=215, y=240)
 
 lbl3 = Label(window, text = 'Отправленные данные:').place(x=15, y=290)
 lbl4 = Label(window, text = 'Принятые данные:').place(x=15, y=320)
@@ -175,7 +183,7 @@ btn_CAN_OFF = Button(window, text="CAN_OFF ", command = lambda: serial_tx_code(C
 btn_RS485_ON = Button(window, text="RS485_ON ", command = lambda: serial_tx_code(RS485_ON)).place(x=150, y=410)
 btn_CAN0_ON = Button(window, text="CAN0_ON ", command = lambda: serial_tx_code(CAN0_ON)).place(x=150, y=440)
 btn_CAN1_ON = Button(window, text="CAN1_ON ", command = lambda: serial_tx_code(CAN1_ON)).place(x=285, y=350)
-
+btn_opros = Button(window, text="Опросить ", command = lambda: serial_tx_code(Opros)).place(x=285, y=440)
 
 window.mainloop()
 

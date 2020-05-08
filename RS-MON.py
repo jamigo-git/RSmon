@@ -3,7 +3,7 @@ from tkinter import *
 from tkinter.ttk import Combobox, Button, Radiobutton, Label, Entry, Spinbox
 import serial
 import time
-
+import ast
 
 #Переменные и константы
 Start = '55555555'
@@ -45,8 +45,9 @@ k_Inter_counter = '1B'
 v_CAN_OFF = '00'
 v_CAN0_ON = '01'
 v_CAN1_ON = '02'
-
 Opros = '00'
+
+white = True
 
 connected = 0
 data=0
@@ -55,8 +56,6 @@ parcel_rx_up = str('0')
 parcel_tx = str('0')
 
 speeds = ['1200','2400', '4800', '9600', '19200', '38400', '57600', '115200']
-
-
 
 #Функция собирает посылку в зависимости от нажатых клавиш и выбора платы
 def Parcel(komanda, value):
@@ -111,6 +110,7 @@ def com_port_state(ser):
 #Класс циклично отправляет посылки пока не нажата клавиша Стоп
 class cycle_tx():
     def __init__(self):
+        self.white = True
         self.second = 0
         btn_cycle = Button(window, text="Цикл", command = self.serial_tx_cycle).place(x=115, y=240)
         btn_stop = Button(window, text="Стоп", command = self.serial_stop).place(x=215, y=240)
@@ -122,6 +122,14 @@ class cycle_tx():
         ser.write(controller_crc_function(txt.get()))
         lbl_parcel_tx = Label(window, text = txt.get()).place(x=200, y=290)
         serial_rx(ser, txt.get())
+        if self.white == True: # Индикация циклической посылки
+            white = Canvas(window, width=10, height=10, bg = 'white')
+            white.place(x=330, y=245)
+            self.white = False
+        else:
+            white = Canvas(window, width=10, height=10, bg = 'black')
+            white.place(x=330, y=245)
+            self.white = True
         self.time = window.after(100, self.serial_tx_cycle) #здесь устанавливается время между посылками (по умолчанию задал 0.1с)
 
     #Метод отключает цикл отправки пакетов
@@ -209,137 +217,29 @@ class rx_dc():
 
             if komanda_rx == '01': #Сравнение принятой посылки идет в десятичной системе
                 self.lbl_komanda_dc['text'] = "управление     \nCAN-интерфейсом \n            "
-                if self.PXIN == '01':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "CAN1 ON             ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '02':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "CAN2 ON             ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '04':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "CAN3 ON             ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '08':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "CAN4 ON             ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '10':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "CAN5 ON             ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '20':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "CAN6 ON             ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                else:
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Ошибка деш.        ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
+                self.PXIN_dc()
+                self.lbl_PXIN = Label(lbl_rx_data_dc, text = self.PXIN_state, foreground = 'green')
+                self.lbl_PXIN.place(x=5, y=125)
                     
             elif komanda_rx == '02':
                 self.lbl_komanda_dc['text'] = "управление     \nкоммутацией имп.\nвыходов     "
-                if self.PXIN == '59':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "A+ RS-485 5V OFF     ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '58':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "A- RS-485 5V OFF     ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '5B':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "R+ RS-485 5V OFF     ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '5A':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "R- RS-485 5V OFF     ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '4D':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "A+ CAN 5V OFF     ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '4C':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "A- CAN 5V OFF     ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '4F':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "R+ CAN 5V OFF     ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '4E':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "R- CAN 5V OFF     ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '51':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "A+ RS-485 5V ON  ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '50':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "A- RS-485 5V ON  ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '53':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "R+ RS-485 5V ON  ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '52':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "R- RS-485 5V ON  ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '45':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "A+ CAN 5V ON     ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '44':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "A- CAN 5V ON     ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '47':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "R+ CAN 5V ON    ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '46':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "R- CAN 5V ON    ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                
-                elif self.PXIN == '65':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON (A+) CAN0      ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '6D':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (A+) CAN0   ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '64':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (A-) CAN0    ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '6C':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (A-) CAN0   ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '67':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (R+) CAN0   ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '6F':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (R+) CAN0    ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '66':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (R-) CAN0    ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '6E':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (R-) CAN0    ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '55':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON (A+) CAN1      ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '5D':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (A+) CAN1   ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '54':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (A-) CAN1    ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '5C':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (A-) CAN1   ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '57':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (R+) CAN1   ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '5F':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (R+) CAN1    ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '56':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (R-) CAN1    ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '5E':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (R-) CAN1    ", foreground = 'red')
-                else:
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Ошибка деш.     ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
+                self.PXIN_dc()
+                self.lbl_PXIN = Label(lbl_rx_data_dc, text = self.PXIN_state, foreground = 'green')
+                self.lbl_PXIN.place(x=5, y=125)
 
                 
             elif komanda_rx == '04':
                 self.lbl_komanda_dc['text'] = "перезапуск    \nUSB-интерфейсов    \nCAN-RS485_"
+                self.PXIN_dc()
+                self.lbl_PXIN = Label(lbl_rx_data_dc, text = self.PXIN_state, foreground = 'green')
+                self.lbl_PXIN.place(x=5, y=125)
                 
             elif komanda_rx == '06':
                 self.lbl_komanda_dc['text'] = "управление     \nCAN-интерфейсом  n\____________"
-
+                self.PXIN_dc()
+                self.lbl_PXIN = Label(lbl_rx_data_dc, text = self.PXIN_state, foreground = 'green')
+                self.lbl_PXIN.place(x=5, y=125)
+                
             elif komanda_rx == '25':
                 self.lbl_komanda_dc['text'] = "переключение     \nинтерфейсов      \nCAN->RS, RS->CAN  "
                 if self.PXIN == '00':
@@ -354,151 +254,83 @@ class rx_dc():
                 
             elif komanda_rx == '20':
                 self.lbl_komanda_dc['text'] = "упр. питанием  \nCAN-интерфейса  \nсчетчика     "
-                if self.PXIN == '51':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON (A+) RS485   ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '59':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (A+) RS485   ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '50':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (A-) RS485   ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '58':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (A-) RS485   ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '53':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (R+) RS485   ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '5B':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (R+) RS485    ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '52':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (R-) RS485   ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '5A':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (R-) RS485    ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '45':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON (A+) CAN      ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '4D':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (A+) CAN   ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '44':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (A-) CAN    ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '4C':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (A-) CAN   ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '47':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (R+) CAN   ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '4F':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (R+) CAN    ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '46':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (R-) CAN    ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '4E':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (R-) CAN    ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '65':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON (A+) CAN0      ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '6D':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (A+) CAN0   ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '64':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (A-) CAN0    ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '6C':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (A-) CAN0   ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '67':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (R+) CAN0   ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '6F':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (R+) CAN0    ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '66':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (R-) CAN0    ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '6E':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (R-) CAN0    ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '55':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON (A+) CAN1      ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '5D':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (A+) CAN1   ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '54':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (A-) CAN1    ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '5C':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (A-) CAN1   ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '57':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (R+) CAN1   ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '5F':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (R+) CAN1    ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '56':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V ON  (R-) CAN1    ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '5E':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "5V OFF  (R-) CAN1    ", foreground = 'red')
+                self.PXIN_dc()
+                self.lbl_PXIN = Label(lbl_rx_data_dc, text = self.PXIN_state, foreground = 'green')
+                self.lbl_PXIN.place(x=5, y=125)
                 
-                else:
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Ошибка деш.         ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
                 
             elif komanda_rx == '26':
                
                 self.lbl_komanda_dc['text'] = "переключение    \nоптических       \nинтерфейсов      "
-                if self.PXIN == '01':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Opt 1 On           ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '02':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Opt 2 On           ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '03':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Opt 3 On           ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '04':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Opt 4 On           ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '05':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Opt 5 On           ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '06':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Opt 6 On           ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '00':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Opt ALL OFF        ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                else:
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Ошибка деш.        ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                    
+                self.PXIN_dc()
+                self.lbl_PXIN = Label(lbl_rx_data_dc, text = self.PXIN_state, foreground = 'green')
+                self.lbl_PXIN.place(x=5, y=125)
+              
             elif komanda_rx == '27':
                 self.lbl_komanda_dc['text'] = "выбор интерфейса \nэлектросчетчика \n                "
-                if self.PXIN == '01':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Интерфейс 1 вкл.   ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '00':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Порты отключены    ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
-                elif self.PXIN == '02':
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Интерфейс 0 вкл.   ", foreground = 'green')
-                    self.lbl_PXIN.place(x=5, y=125)
-                else:
-                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Ошибка деш.        ", foreground = 'red')
-                    self.lbl_PXIN.place(x=5, y=125)
+                self.PXIN_dc()
+                self.lbl_PXIN = Label(lbl_rx_data_dc, text = self.PXIN_state, foreground = 'green')
+                self.lbl_PXIN.place(x=5, y=125)
                  
+    def PXIN_dc(self): # Функция дешифрует биты порта PXIN ответной посылки контроллера 
+        PXINb = int(self.PXIN,16)
+        Interface = ''
+        Impuls_out = ''
+        PXIN_state = ''
+        _5v_bit_up = (PXINb & 8)
 
-   
+        inter_bits = PXINb &  4
+        t_inter_bits = PXINb & 112
+        CAN_inters = 4
+        CAN_inter = 64
+        CAN_inter_0 = 96
+        CAN_inter_1 = 80
+        
+        RS_inter = 101
+        RS_inter_0 = 96
+        RS_inter_1 = 80
+
+        impuls_bits = PXINb & 3
+        
+        Aplus = 1
+        Aminus = 0
+        Rplus = 3
+        Rminus = 2
+        
+        if _5v_bit_up != 0:
+            _5v_bit = ' 5V OFF '     
+        else:
+            _5v_bit = ' 5V ON '
+            
+        if CAN_inters == inter_bits:
+            if CAN_inter == t_inter_bits:
+                Interface = ' CAN '
+            elif CAN_inter_1 == t_inter_bits:
+                Interface = ' CAN1 '
+            elif CAN_inter_0 == t_inter_bits:
+                Interface = ' CAN0 '
+
+        if inter_bits == 0:
+            if RS_inter == t_inter_bits:
+                Interface = ' RS485 '
+            elif RS_inter_0 == t_inter_bits:
+                Interface = ' RS485_0 '
+            elif RS_inter_1 == t_inter_bits:
+                Interface = ' RS485_1 '
+
+        if Aplus == impuls_bits:
+            Impuls_out = ' A+     '
+        elif Aminus == impuls_bits:
+            Impuls_out = ' A-     '
+        elif Rplus == impuls_bits:
+            Impuls_out = ' R+     '
+        elif Rminus == impuls_bits:
+            Impuls_out = ' R-     '
+        print(Interface)
+        self.PXIN_state = _5v_bit + Interface + Impuls_out
+        print('Интерфейс', Interface)
+        return (self.PXIN_state)
+    
     def komanda_03_dc(parcel_rx_up):
         lbl_komanda_dc = Label(lbl_rx_data_dc, text = "выбор счит.\nканала таймера").place(x=5, y=65)
        
@@ -620,9 +452,9 @@ btn_CAN_06 = Button(lbl_CAN, text="CAN6 ", command = lambda: serial_tx_code(Parc
 
 lbl_counter = LabelFrame(window, text = "Инт. счетчик")
 lbl_counter.place(x = 420, y=350, width = 130, heigh = 110)
-btn_CAN_OFF = Button(lbl_counter, text="CAN_All_OFF ", command = lambda: serial_tx_code(Parcel(k_Inter_counter, v_CAN_OFF))).place(x=5, y=0)
-btn_CAN0_ON = Button(lbl_counter, text="CAN0_ON ", command = lambda: serial_tx_code(Parcel(k_Inter_counter, v_CAN0_ON))).place(x=5, y=30)
-btn_CAN1_ON = Button(lbl_counter, text="CAN1_ON ", command = lambda: serial_tx_code(Parcel(k_Inter_counter, v_CAN1_ON))).place(x=5, y=60)
+btn_CAN_OFF = Button(lbl_counter, text="Inter_All_OFF ", command = lambda: serial_tx_code(Parcel(k_Inter_counter, v_CAN_OFF))).place(x=5, y=0)
+btn_CAN0_ON = Button(lbl_counter, text="Int_0_ON ", command = lambda: serial_tx_code(Parcel(k_Inter_counter, v_CAN0_ON))).place(x=5, y=30)
+btn_CAN1_ON = Button(lbl_counter, text="Int_1_ON ", command = lambda: serial_tx_code(Parcel(k_Inter_counter, v_CAN1_ON))).place(x=5, y=60)
 
 btn_opros = Button(window, text="Опросить ", command = lambda: serial_tx_code(Parcel(Opros,Opros)))
 btn_opros.place(x=430, y=465)

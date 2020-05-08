@@ -1,6 +1,5 @@
 from tkinter import *  
 from tkinter.ttk import Combobox, Button, Radiobutton, Label, Entry, Spinbox
-from tkinter import Tk, Frame, Menu
 import serial
 import time
 
@@ -35,12 +34,10 @@ v_CAN1_ON = '02'
 
 Opros = '00'
 
-
 connected = 0
 data=0
 amount = 0
-stop = False
-flag = 0
+
 speeds = ['1200','2400', '4800', '9600', '19200', '38400', '57600', '115200']
 
 
@@ -94,15 +91,29 @@ def com_port_state(ser):
         com_port_state = Canvas(window, width=10, height=10, bg = 'green').place(x=400, y=125)
     else:
         com_port_state = Canvas(window, width=10, height=10, bg = 'red').place(x=400, y=125)
+
+#Класс циклично отправляет посылки пока не нажата клавиша Стоп наследует методы из Tk
+class cycle_tx():
+    def __init__(self):
+        #super().__init__()
+        self.second = 0
+        btn_cycle = Button(window, text="Цикл", command = self.serial_tx_cycle).place(x=115, y=240)
+        btn_stop = Button(window, text="Стоп", command = self.serial_stop).place(x=215, y=240)
         
-#Функция циклично отправляет посылки пока не нажата клавиша Стоп
-def serial_tx_cycle(): 
-    ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
-    ser.write(controller_crc_function(txt.get()))
-    lbl_parcel_tx = Label(window, text = txt.get()).place(x=200, y=290)
-    serial_rx(ser)
-    if stop == False:
-        end = window.after(1000, serial_tx_cycle)
+    #Метод цикличной отправки/приема пакетов и отображения полученных данных
+    def serial_tx_cycle(self): 
+        ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
+        self.second +=1
+        ser.write(controller_crc_function(txt.get()))
+        lbl_parcel_tx = Label(window, text = txt.get()).place(x=200, y=290)
+        serial_rx(ser)
+        self.time = window.after(100, self.serial_tx_cycle) #здесь устанавливается время между посылками (по умолчанию задал 0.1с)
+
+    #Метод отключает цикл отправки пакетов
+    def serial_stop(self): 
+        if self.time is not None:
+            window.after_cancel(self.time)
+            self.time = None
             
 #Функция отправляет заданное количество посылок, берет значения из поля тхт  
 def serial_tx(): 
@@ -136,20 +147,7 @@ def serial_rx(ser):
     lbl_parcel_rx = Label(window, text = parcel_rx_up).place(x=200, y=320) #Выводим в пользовательский интерфейс
     ser.close()
 
-#Функция отключает цикл отправки пакетов
-def serial_stop(): 
-    global flag
-    global stop
-    if flag != 2:
-        if stop == False:
-            stop = True
-            flag = 1
-            btn_stop_mark = Canvas(window, width=10, height=10, bg="red").place(x=320, y=245)
-        else:
-            stop = False
-            flag = 2
-            btn_stop_mark = Canvas(window, width=10, height=10, bg="green").place(x=320, y=245)
-    flag = 0
+
         
 #Main program
 window = Tk()  
@@ -215,8 +213,8 @@ menu.add_command(label="Вырезать", command = lambda: txt.event_generate(
 txt.bind("<Button-3>", mouse_button3) #нажатие на правую клавишу вызывает функцию всплывающего меню
 
 btn_send = Button(window, text="Отправить", command = serial_tx).place(x=15, y=240)
-btn_cycle = Button(window, text="Цикл", command = serial_tx_cycle).place(x=115, y=240)
-btn_stop = Button(window, text="Стоп", command = serial_stop).place(x=215, y=240)
+cycle = cycle_tx() # активируем класс с кнопками "Цикл" и "Стоп" см. выше
+
 
 lbl3 = Label(window, text = 'Отправленные данные:').place(x=15, y=290)
 lbl4 = Label(window, text = 'Принятые данные:').place(x=15, y=320)

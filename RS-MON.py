@@ -56,9 +56,6 @@ stop = 0
 speeds = ['1200','2400', '4800', '9600', '19200', '38400', '57600', '115200']
 
 def serial_tx_cycle(): #Функция отправляет 1000 посылок, берет значения из поля тхт
-    print(number_of_parcel.get())
-    print(amount)
-
     ser = serial.Serial(combo.get(), combo1.get())
     ser.write(controller_crc_function(txt.get()))
     lbl_parcel_tx = Label(window, text = txt.get()).place(x=250, y=290)
@@ -77,7 +74,9 @@ def serial_tx(): #Функция отправляет заданное коли�
         lbl_parcel_tx = Label(window, text = 00000000000000)
         lbl_parcel_tx = Label(window, text = display).place(x=250, y=290)
         amount -=1
-        display_data_rx =ser.read(10)
+        display_data_rx =ser.read(20)
+        print(display_data_rx)
+        
         lbl_parcel_rx = Label(window, text = display_data_rx)
     ser.close()
 
@@ -89,19 +88,13 @@ def serial_tx_code(parcel): #Функция отправляет заранее 
         lbl_parcel_tx = Label(window, text = 00000000000000)
         lbl_parcel_tx = Label(window, text = parcel).place(x=250, y=290)
         amount-=1
-        display_data_rx = (ser.read(9))#[:1]
-        lbl_parcel_rx = Label(window, text = display_data_rx).place(x=250, y=320)
+        display_data_rx = ser.read(20)      #читаем 20 байт данных с порта
+        parcel_hex = display_data_rx.hex()  #Переводим полученные данные в HEX-формат (убираем /x)
+        parcel_hex = parcel_hex[18:]              #Удаляем отправленную посылку из принятых данных
+        parcel_rx_up = parcel_hex.upper()   #Переводим все буквы в верхний регистр (для удобства)
+        lbl_parcel_rx = Label(window, text = parcel_rx_up).place(x=250, y=320) #Выводим в пользовательский интерфейс
     ser.close()
     
-
-def serial_rx(): #Функция включает автоматическую прослушку порта
-    ser = serial.Serial(combo.get(), combo1.get(),timeout=5)
-    def serial_rx_1():
-        display_data_rx =ser.read(10)
-        lbl_parcel_rx = Label(window, text = display_data_rx)
-        lbl_parcel_rx.update()
-        print(received.decode('UTF-8'))
-        window.after(1000,serial_rx_1)
 
 def serial_stop(): #Функция отключает общение с COM-портом
     stop = True

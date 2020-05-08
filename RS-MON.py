@@ -46,6 +46,8 @@ Opros = '00'
 connected = 0
 data=0
 amount = 0
+parcel_rx_up = str('0')
+parcel_tx = str('0')
 
 speeds = ['1200','2400', '4800', '9600', '19200', '38400', '57600', '115200']
 
@@ -101,10 +103,9 @@ def com_port_state(ser):
     else:
         com_port_state = Canvas(window, width=10, height=10, bg = 'red').place(x=400, y=125)
 
-#Класс циклично отправляет посылки пока не нажата клавиша Стоп наследует методы из Tk
+#Класс циклично отправляет посылки пока не нажата клавиша Стоп
 class cycle_tx():
     def __init__(self):
-        #super().__init__()
         self.second = 0
         btn_cycle = Button(window, text="Цикл", command = self.serial_tx_cycle).place(x=115, y=240)
         btn_stop = Button(window, text="Стоп", command = self.serial_stop).place(x=215, y=240)
@@ -115,7 +116,7 @@ class cycle_tx():
         self.second +=1
         ser.write(controller_crc_function(txt.get()))
         lbl_parcel_tx = Label(window, text = txt.get()).place(x=200, y=290)
-        serial_rx(ser)
+        serial_rx(ser, txt.get())
         self.time = window.after(100, self.serial_tx_cycle) #здесь устанавливается время между посылками (по умолчанию задал 0.1с)
 
     #Метод отключает цикл отправки пакетов
@@ -134,7 +135,7 @@ def serial_tx():
     while amount != 0:
         ser.write(controller_crc_function(txt.get()))
         amount-=1
-        serial_rx(ser)
+        serial_rx(ser,parcel)
 
 #Функция отправляет заранее определенный код используется для заранее обозначенных клавиш
 def serial_tx_code(parcel_full): 
@@ -145,19 +146,126 @@ def serial_tx_code(parcel_full):
     while amount != 0:
         ser.write(controller_crc_function(parcel_full))
         amount-=1
-        serial_rx(ser)
+        serial_rx(ser,parcel_full)
         
 #Функция чтения данных из COM-порта и приведения их в нормальный вид
-def serial_rx(ser):
+def serial_rx(ser, parcel_tx):
     display_data_rx = ser.read(20)      #читаем 20 байт данных с порта
     parcel_hex = display_data_rx.hex()  #Переводим полученные данные в HEX-формат (убираем /x)
     parcel_hex = parcel_hex[18:]              #Удаляем отправленную посылку из принятых данных
+    
     parcel_rx_up = parcel_hex.upper()   #Переводим все буквы в верхний регистр (для удобства)
     lbl_parcel_rx = Label(window, text = parcel_rx_up).place(x=200, y=320) #Выводим в пользовательский интерфейс
     ser.close()
+    
+    rx_dc1 = rx_dc(parcel_rx_up, parcel_tx)
+    rx_dc1.crc_plata(parcel_rx_up)
+    
+    
+
+    
+    
+    
+#Класс дешифровки принятых данных и вывода их в поле "Принятые данные"
+class rx_dc():
+    def __init__(self, parcel_rx_up, parcel_tx):
+        self.lbl_komanda_dc = Label(lbl_rx_data_dc, text = "")
+        self.lbl_komanda_dc.place(x=5, y=65)
+        self.lbl_number_of_plate = Label(lbl_rx_data_dc, text = "")
+        self.lbl_number_of_plate.place(x=5, y=25)
+        self.lbl_version_po = Label(lbl_rx_data_dc, text = "")
+        self.lbl_version_po.place(x=5, y=45)
+        self.lbl_komanda = Label(lbl_rx_data_dc, text = "")
+        self.lbl_komanda.place(x=5, y=45)
+        self.lbl_PXIN = Label(lbl_rx_data_dc, text = "")
+        self.lbl_PXIN.place(x=5, y=125)
+
+        commands_1 = ('01', '02', '04', '06', '19', '14', '1A', '1B')
+        number_of_plate = parcel_rx_up[4:6]
+        self.lbl_number_of_plate = Label(lbl_rx_data_dc, text = ("Адрес платы: " + str(int(number_of_plate, 16)).zfill(2)))
+        self.lbl_number_of_plate.place(x=5, y=25)
+        komanda_tx = parcel_tx[10:12]
+        if komanda_tx == '00':
+            version_po = int(parcel_rx_up[8:10], 16)
+            self.lbl_version_po = Label(lbl_rx_data_dc, text = ("Версия ПО: " + str(version_po)))
+            self.lbl_version_po.place(x=5, y=45)
+            self.lbl_komanda = Label(lbl_rx_data_dc, text = "Команда: 00")
+            self.lbl_komanda.place(x=5, y=65)
+            self.lbl_komanda_dc = Label(lbl_rx_data_dc, text = "связь с \nконтроллером___\n________________")
+            self.lbl_komanda_dc.place(x=5, y=85)
+            
+        elif commands_1.count(komanda_tx) != 0: #Сравнение отправленной посылки идет в шестнадцатеричной системе
+            self.PXIN = str(parcel_rx_up[10:12]).zfill(2)
+            print(self.PXIN)
+            komanda_rx = parcel_rx_up[6:8]
+            komanda_rx = int(komanda_rx, 16)
+            komanda_rx = str(komanda_rx).zfill(2)
+            self.lbl_komanda = Label(lbl_rx_data_dc, text = ("Команда: " + komanda_rx + ' Dec'))
+            self.lbl_komanda.place(x=5, y=45)
+
+            if komanda_rx == '01': #Сравнение принятой посылки идет в десятичной системе
+                self.lbl_komanda_dc['text'] = "____________\n____________\n____________"
+                self.lbl_komanda_dc['text'] = "управление____\nCAN-интерфейсом \n____________"
+                
+            elif komanda_rx == '02':
+                self.lbl_komanda_dc['text'] = "____________.\n____________\n____________"
+                self.lbl_komanda_dc['text'] = "управление____\nкоммутацией имп.\nвыходов___"
+                
+            elif komanda_rx == '04':
+                self.lbl_komanda_dc['text'] = "____________.\n____________\n____________"
+                self.lbl_komanda_dc['text'] = "перезапуск____\nUSB-интерфейсов__\nCAN-RS485_"
+                
+            elif komanda_rx == '06':
+                self.lbl_komanda_dc['text'] = "____________.\n____________\n____________"
+                self.lbl_komanda_dc['text'] = "управление____\nCAN-интерфейсом n\____________"
+
+            elif komanda_rx == '25':
+                self.lbl_komanda_dc['text'] = "____________.\n____________\n____________"
+                self.lbl_komanda_dc['text'] = "переключение____\nинтерфейсов____\nCAN->RS, RS->CAN"
+                
+            elif komanda_rx == '20':
+                self.lbl_komanda_dc['text'] = "____________.\n____________\n____________"
+                self.lbl_komanda_dc['text'] = "упр. питанием\nCAN-интерфейса\n____________"
+                
+            elif komanda_rx == '26':
+                self.lbl_komanda_dc['text'] = "____________\n____________\n____________"
+                self.lbl_komanda_dc['text'] = "переключение____\nоптических_____\nинтерфейсов____"
+                
+            elif komanda_rx == '27':
+                
+                self.lbl_komanda_dc['text'] = "____________\n____________\n____________"
+                self.lbl_komanda_dc['text'] = "выбор интерфейса\nэлектросчетчика\n____________"
+                if self.PXIN == '01':
+                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Интерфейс 0 вкл. ", foreground = 'green')
+                    self.lbl_PXIN.place(x=5, y=125)
+                elif self.PXIN == '00':
+                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Порты отключены ", foreground = 'red')
+                    self.lbl_PXIN.place(x=5, y=125)
+                elif self.PXIN == '02':
+                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Интерфейс 1 вкл. ", foreground = 'green')
+                    self.lbl_PXIN.place(x=5, y=125)
+                else:
+                    self.lbl_PXIN = Label(lbl_rx_data_dc, text = "Ошибка распознания", foreground = 'red')
+                    self.lbl_PXIN.place(x=5, y=125)
+                 
+
+   
+    def komanda_03_dc(parcel_rx_up):
+        lbl_komanda_dc = Label(lbl_rx_data_dc, text = "выбор счит.\nканала таймера").place(x=5, y=65)
+       
+
+    def crc_plata(self, parcel_rx_up): #функция вычисляет CRC принятой посылки и выводит значение проверки
+        crc256_rx = parcel_rx_up[12:14]
+        crc256_chk = hex(sum(bytes.fromhex(parcel_rx_up[0:12])) % 256)[2:] #Вычисляем контрольную сумму по модулю 256, убираем 0x перед шестнадцатеричным числом
+        if crc256_rx == crc256_chk.upper():
+            lbl_crc = Label(lbl_rx_data_dc, text = "CRC: ОК", foreground = 'Green').place(x=5, y=5)
+        else:
+            lbl_crc = Label(lbl_rx_data_dc, text = "CRC: BAD", foreground = 'Red').place(x=5, y=5)
+    
 
 
-        
+
+
 #Main program
 window = Tk()  
 window.title("Программа для проверки доработок Incotex")  
@@ -229,7 +337,7 @@ lbl3 = Label(window, text = 'Отправленные данные:').place(x=15
 lbl4 = Label(window, text = 'Принятые данные:').place(x=15, y=320)
 
 lbl_optic = LabelFrame(window, text = "Опт. интерфейсы")
-lbl_optic.place(x = 420, y=180, width = 130, heigh = 150)
+lbl_optic.place(x = 420, y=190, width = 130, heigh = 150)
 btn_CAN_01 = Button(lbl_optic, text="Opto1 ", command = lambda: serial_tx_code(Parcel(k_OPT_inter, v_opt_inter_1)), width = 5).place(x=5, y=0)
 btn_CAN_02 = Button(lbl_optic, text="Opto2 ", command = lambda: serial_tx_code(Parcel(k_OPT_inter, v_opt_inter_2)), width = 5).place(x=5, y=30)
 btn_CAN_03 = Button(lbl_optic, text="Opto3 ", command = lambda: serial_tx_code(Parcel(k_OPT_inter, v_opt_inter_3)), width = 5).place(x=5, y=60)
@@ -265,6 +373,9 @@ lbl_counter.place(x = 420, y=350, width = 130, heigh = 145)
 btn_CAN_OFF = Button(lbl_counter, text="CAN_All_OFF ", command = lambda: serial_tx_code(Parcel(k_Inter_counter, v_CAN_OFF))).place(x=5, y=0)
 btn_CAN0_ON = Button(lbl_counter, text="CAN0_ON ", command = lambda: serial_tx_code(Parcel(k_Inter_counter, v_CAN0_ON))).place(x=5, y=30)
 btn_CAN1_ON = Button(lbl_counter, text="CAN1_ON ", command = lambda: serial_tx_code(Parcel(k_Inter_counter, v_CAN1_ON))).place(x=5, y=60)
+
+lbl_rx_data_dc = LabelFrame(window, text = "Принятые данные")
+lbl_rx_data_dc.place(x = 420, y=0, width = 150, heigh = 180)
 
 
 window.mainloop()

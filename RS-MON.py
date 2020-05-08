@@ -4,6 +4,7 @@ from tkinter import Tk, Frame, Menu
 import serial
 import time
 
+
 #Переменные и константы
 Start = '55555555'
 Stop = '00'
@@ -42,6 +43,8 @@ stop = False
 flag = 0
 speeds = ['1200','2400', '4800', '9600', '19200', '38400', '57600', '115200']
 
+
+
 #Функция собирает посылку в зависимости от нажатых клавиш и выбора платы
 def Parcel(komanda, value):
     Number_plate = hex(int(number_of_plate.get()))[2:]
@@ -71,7 +74,8 @@ def controller_crc_function(parcel):                   #Функция вычи�
     parcel_crc = bytes.fromhex(parcel + str(crc256))   #Добавляем контрольную сумму к нашей строке и переводим в байты
     return (parcel_crc)
 
-def serial_ports(): #Funcrion find all com-ports in Windows
+#Функция находит все свободные COM-порты в системе и добавляет их в список result
+def serial_ports(): 
     ports = ['COM%s' % (i + 1) for i in range(256)]
     result = []
     for port in ports:
@@ -83,17 +87,25 @@ def serial_ports(): #Funcrion find all com-ports in Windows
             pass
     return result
 
-def serial_tx_cycle(): #Функция отправляет 1000 посылок, берет значения из поля тхт
+#Функция проверяет состояние выбранного COM-порта
+def com_port_state(ser):
+    ser = serial.Serial(combo.get(), combo1.get())
+    if ser.cd == True: # Если на линии обнаружен CD - рисуем зеленый квадрат
+        com_port_state = Canvas(window, width=10, height=10, bg = 'green').place(x=400, y=125)
+    else:
+        com_port_state = Canvas(window, width=10, height=10, bg = 'red').place(x=400, y=125)
+        
+#Функция циклично отправляет посылки пока не нажата клавиша Стоп
+def serial_tx_cycle(): 
     ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
     ser.write(controller_crc_function(txt.get()))
     lbl_parcel_tx = Label(window, text = txt.get()).place(x=200, y=290)
     serial_rx(ser)
-    print("Значение Стоп ",stop)
     if stop == False:
         end = window.after(1000, serial_tx_cycle)
             
-  
-def serial_tx(): #Функция отправляет заданное количество посылок, берет значения из поля тхт
+#Функция отправляет заданное количество посылок, берет значения из поля тхт  
+def serial_tx(): 
     ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
     amount = int(number_of_parcel.get())
     parcel = str(txt.get())
@@ -104,7 +116,8 @@ def serial_tx(): #Функция отправляет заданное коли�
         amount-=1
         serial_rx(ser)
 
-def serial_tx_code(parcel_full): #Функция отправляет заранее определенный код
+#Функция отправляет заранее определенный код используется для заранее обозначенных клавиш
+def serial_tx_code(parcel_full): 
     ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
     amount = int(number_of_parcel.get())
     lbl_parcel_tx = Label(window, text = 00000000000000)
@@ -113,8 +126,8 @@ def serial_tx_code(parcel_full): #Функция отправляет заран
         ser.write(controller_crc_function(parcel_full))
         amount-=1
         serial_rx(ser)
-    
-
+        
+#Функция чтения данных из COM-порта и приведения их в нормальный вид
 def serial_rx(ser):
     display_data_rx = ser.read(20)      #читаем 20 байт данных с порта
     parcel_hex = display_data_rx.hex()  #Переводим полученные данные в HEX-формат (убираем /x)
@@ -122,8 +135,9 @@ def serial_rx(ser):
     parcel_rx_up = parcel_hex.upper()   #Переводим все буквы в верхний регистр (для удобства)
     lbl_parcel_rx = Label(window, text = parcel_rx_up).place(x=200, y=320) #Выводим в пользовательский интерфейс
     ser.close()
-    
-def serial_stop(): #Функция отключает общение с COM-портом
+
+#Функция отключает цикл отправки пакетов
+def serial_stop(): 
     global flag
     global stop
     if flag != 2:
@@ -137,8 +151,8 @@ def serial_stop(): #Функция отключает общение с COM-по
             btn_stop_mark = Canvas(window, width=10, height=10, bg="green").place(x=320, y=245)
     flag = 0
         
-   
-window = Tk()  #Main program
+#Main program
+window = Tk()  
 window.title("Программа для проверки доработок Incotex")  
 window.geometry('600x500')
 window.bind_all("<Key>", _onKeyRelease, "+") #Включаем подержку нажатий клавиш Ctr-C, Ctr-V, Ctr-X
@@ -146,7 +160,7 @@ window.bind_all("<Key>", _onKeyRelease, "+") #Включаем подержку 
 sel_interface = IntVar()
 sel_interface.set(1)
 lbl_inter = LabelFrame(window, text='Интерфейсы')
-lbl_inter.pack(fill=X)
+lbl_inter.place(x=5, y=0, width = 200)
 rad1 = Radiobutton(lbl_inter, text='CAN', value=1, variable=sel_interface)
 rad1.pack(side=LEFT)
 rad2 = Radiobutton(lbl_inter, text='RS-485', value=2, variable=sel_interface)
@@ -154,7 +168,7 @@ rad2.pack(side=LEFT)
 
 sel_CRC = IntVar()
 lbl_CRC = LabelFrame(window, text = "CRC")
-lbl_CRC.pack(fill=X)
+lbl_CRC.place(x = 5, y=50, width = 300)
 rad_controller = Radiobutton(lbl_CRC, text='Контроллер', value=1, variable=sel_CRC)
 rad_controller.pack(side=LEFT)
 rad_counter = Radiobutton(lbl_CRC, text='Счетчик', value=2, variable=sel_CRC)
@@ -164,9 +178,10 @@ rad_wocrc.pack(side=LEFT)
 sel_CRC.set(1)
 
 lbl0 = Label(window, text = "Выберите COM-порт:").place(x=15, y=100)
-combo = Combobox(window, values = serial_ports() )
+combo = Combobox(window, values = serial_ports())
 combo.place(x=15, y=120)
 combo.current(0)
+combo.bind('<<ComboboxSelected>>', com_port_state) #вызываем функцию отображения состояния порта
 
 lbl01 = Label(window, text = "Выберите скорость:").place(x=200, y=100)
 combo1 = Combobox(window, values = speeds)

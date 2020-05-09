@@ -4,6 +4,7 @@ from tkinter.ttk import Combobox, Button, Radiobutton, Label, Entry, Spinbox
 import serial
 import time
 import ast
+import winreg 
 
 #Переменные и константы
 Start = '55555555'
@@ -56,6 +57,16 @@ parcel_rx_up = str('0')
 parcel_tx = str('0')
 
 speeds = ['1200','2400', '4800', '9600', '19200', '38400', '57600', '115200']
+
+#Функция работы с реестром
+def winreestr():
+    keyValue = 'Software\\RSMON'
+    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software')
+    winreg.CreateKey(key, 'RSMON')
+    winreg.CloseKey(key)
+    
+    
+
 
 #Функция собирает посылку в зависимости от нажатых клавиш и выбора платы
 def Parcel(komanda, value):

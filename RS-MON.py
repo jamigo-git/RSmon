@@ -58,14 +58,29 @@ parcel_tx = str('0')
 
 speeds = ['1200','2400', '4800', '9600', '19200', '38400', '57600', '115200']
 
-#Функция работы с реестром
-def winreestr():
+#Функция записи данных в реестр (последняя отправленная посылка, выбранный COM-порт)
+def winreestr_push(parcel,comport):
     keyValue = 'Software\\RSMON'
-    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software')
-    winreg.CreateKey(key, 'RSMON')
-    winreg.CloseKey(key)
-    
-    
+    software_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software')
+    winreg.CreateKey(software_key, 'RSMON')
+    rsmon_key = winreg.OpenKey(software_key, 'RSMON', 0, winreg.KEY_ALL_ACCESS)
+    winreg.CreateKeyEx(rsmon_key, "last_parcel")
+    winreg.SetValueEx(rsmon_key, "last_parcel" , None, winreg.REG_SZ, parcel)
+    winreg.CreateKeyEx(rsmon_key, "last_com")
+    winreg.SetValueEx(rsmon_key, "last_com" , None, winreg.REG_SZ, comport)
+    winreg.CloseKey(rsmon_key)
+
+#Функция получения данных из реестра (последняя отправленная посылка, выбранный COM-порт)
+def winreestr_pull():
+    keyValue = 'Software\\RSMON'
+    try:
+        rsmon_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\\RSMON')
+        parcel = winreg.QueryValueEx(rsmon_key, "last_parcel")
+        comport = winreg.QueryValueEx(rsmon_key, "last_com")
+    except Exception:
+        parcel = ("5555555500000000", 1) # при получении из реестра значения ключа получаем похожий кортеж
+        comport = ("COM1", 1)            # при получении из реестра значения ключа получаем похожий кортеж
+    return (parcel,comport)
 
 
 #Функция собирает посылку в зависимости от нажатых клавиш и выбора платы
@@ -118,6 +133,11 @@ def com_port_state(ser):
     else:
         com_port_state = Canvas(window, width=10, height=10, bg = 'red').place(x=400, y=125)
 
+#Функция выводит в правый угол ошибку в случае сбоя инициализации COM-порта
+def com_port_bad():
+    self.lbl_number_of_plate = Label(lbl_rx_data_dc, text = "Не удалось открыть COM-порт\nПовторите попытку снова\n                \n                \n                  \n                \n                 ", foreground = 'red')
+    self.lbl_number_of_plate.place(x=5, y=25)
+
 #Класс циклично отправляет посылки пока не нажата клавиша Стоп
 class cycle_tx():
     def __init__(self):
@@ -129,6 +149,7 @@ class cycle_tx():
     #Метод цикличной отправки/приема пакетов и отображения полученных данных
     def serial_tx_cycle(self): 
         ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
+        winreestr_push(txt.get(), combo.get()) # записываем в реестр отправлемую посылку и выбранный COM-порт
         self.second +=1
         ser.write(controller_crc_function(txt.get()))
         lbl_parcel_tx = Label(window, text = txt.get()).place(x=200, y=290)
@@ -153,26 +174,34 @@ class cycle_tx():
             
 #Функция отправляет заданное количество посылок, берет значения из поля тхт  
 def serial_tx(): 
-    ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
-    amount = int(number_of_parcel.get())
-    parcel = str(txt.get())
-    lbl_parcel_tx = Label(window, text = 00000000000000)
-    lbl_parcel_tx = Label(window, text = txt.get()).place(x=200, y=290)
-    while amount != 0:
-        ser.write(controller_crc_function(txt.get()))
-        amount-=1
+    try:
+        ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
+        amount = int(number_of_parcel.get())
+        parcel = str(txt.get())
+        winreestr_push(parcel, combo.get())
+        lbl_parcel_tx = Label(window, text = 00000000000000)
+        lbl_parcel_tx = Label(window, text = txt.get()).place(x=200, y=290)
+        while amount != 0:
+            ser.write(controller_crc_function(txt.get()))
+            amount-=1
         serial_rx(ser,parcel)
+    except Exception:
+        comport_bad()
 
 #Функция отправляет заранее определенный код используется для заранее обозначенных клавиш
 def serial_tx_code(parcel_full): 
-    ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
-    amount = int(number_of_parcel.get())
-    lbl_parcel_tx = Label(window, text = 00000000000000)
-    lbl_parcel_tx = Label(window, text = parcel_full).place(x=200, y=290)
-    while amount != 0:
-        ser.write(controller_crc_function(parcel_full))
-        amount-=1
+    try:
+        ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
+        amount = int(number_of_parcel.get())
+        lbl_parcel_tx = Label(window, text = 00000000000000)
+        lbl_parcel_tx = Label(window, text = parcel_full).place(x=200, y=290)
+        while amount != 0:
+            ser.write(controller_crc_function(parcel_full))
+            amount-=1
         serial_rx(ser,parcel_full)
+    except Exception:
+        comport_bad()
+    
         
 #Функция чтения данных из COM-порта и приведения их в нормальный вид
 def serial_rx(ser, parcel_tx):
@@ -356,12 +385,9 @@ class rx_dc():
             lbl_crc = Label(lbl_rx_data_dc, text = "CRC: BAD  ", foreground = 'Red').place(x=5, y=5)
     
 
-
-
-
 #Main program
 window = Tk()  
-window.title("Программа для проверки доработок Incotex (by Jamigo)")  
+window.title("Программа для проверки плат коммутации Incotex (by Jamigo)")  
 window.geometry('600x500')
 window.bind_all("<Key>", _onKeyRelease, "+") #Включаем подержку нажатий клавиш Ctr-C, Ctr-V, Ctr-X
 
@@ -385,11 +411,15 @@ rad_controller.pack(side=LEFT)
 #rad_wocrc.pack(side=LEFT)
 sel_CRC.set(1)
 
+
+reestr = winreestr_pull()       # присваиваем переменной кортеж значений (0-последняя посылка из реестра (кортеж), 1-последний выбраный COM-порт (кортеж))
+COM_regedit = reestr[1]         # забираем из кортежа (при получении из реестра (COM, 1)) значение COM
+
 lbl0 = Label(window, text = "Выберите COM-порт:").place(x=15, y=100)
 combo = Combobox(window, values = serial_ports())
 combo.place(x=15, y=120)
-combo.current(0)
 combo.bind('<<ComboboxSelected>>', com_port_state) #вызываем функцию отображения состояния порта
+combo.set(COM_regedit[0])   # устанавливае при запуске программы значение COM-порта из реестра
 
 lbl01 = Label(window, text = "Выберите скорость:").place(x=200, y=100)
 combo1 = Combobox(window, values = speeds)
@@ -409,11 +439,11 @@ number_of_plate.delete(00,"end")                            #удаление в
 number_of_plate.insert(0,00)                                #установка значения по умолчанию 1
 lbl_number_of_plate = Label(window, text="Номер платы").place(x=310, y=180)
 
-
+parcel_regedit = reestr [0] # забираем из кортежа (при получении из реестра (parcel, 1)) значение parcel
 txt = Entry(window, width=30)  # поле для ввода посылки
 txt.place(x=15, y=210) 
 txt.delete(0, "end")
-txt.insert(0, 5555555500000000)
+txt.insert(0, parcel_regedit[0])        
 txt.focus()                   # при запуске программы фокусируемся в данном поле
 
 menu = Menu(tearoff=0) #пункты меню всплывающего в текстовом поле при нажатии правой клавиши

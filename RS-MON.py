@@ -64,9 +64,9 @@ def winreestr_push(parcel,comport):
     software_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software')
     winreg.CreateKey(software_key, 'RSMON')
     rsmon_key = winreg.OpenKey(software_key, 'RSMON', 0, winreg.KEY_ALL_ACCESS)
-    winreg.CreateKeyEx(rsmon_key, "last_parcel")
+    #winreg.CreateKeyEx(rsmon_key, "last_parcel")
     winreg.SetValueEx(rsmon_key, "last_parcel" , None, winreg.REG_SZ, parcel)
-    winreg.CreateKeyEx(rsmon_key, "last_com")
+    #winreg.CreateKeyEx(rsmon_key, "last_com")
     winreg.SetValueEx(rsmon_key, "last_com" , None, winreg.REG_SZ, comport)
     winreg.CloseKey(rsmon_key)
 
@@ -412,14 +412,13 @@ rad_controller.pack(side=LEFT)
 sel_CRC.set(1)
 
 
-reestr = winreestr_pull()       # присваиваем переменной кортеж значений (0-последняя посылка из реестра (кортеж), 1-последний выбраный COM-порт (кортеж))
-COM_regedit = reestr[1]         # забираем из кортежа (при получении из реестра (COM, 1)) значение COM
+reestr_com = winreestr_pull()[1]       # присваиваем переменной кортеж значений (0-последняя посылка из реестра (кортеж), 1-последний выбраный COM-порт (кортеж))
 
 lbl0 = Label(window, text = "Выберите COM-порт:").place(x=15, y=100)
 combo = Combobox(window, values = serial_ports())
 combo.place(x=15, y=120)
 combo.bind('<<ComboboxSelected>>', com_port_state) #вызываем функцию отображения состояния порта
-combo.set(COM_regedit[0])   # устанавливае при запуске программы значение COM-порта из реестра
+combo.set(reestr_com[0])   # устанавливае при запуске программы значение COM-порта из реестра
 
 lbl01 = Label(window, text = "Выберите скорость:").place(x=200, y=100)
 combo1 = Combobox(window, values = speeds)
@@ -439,11 +438,11 @@ number_of_plate.delete(00,"end")                            #удаление в
 number_of_plate.insert(0,00)                                #установка значения по умолчанию 1
 lbl_number_of_plate = Label(window, text="Номер платы").place(x=310, y=180)
 
-parcel_regedit = reestr [0] # забираем из кортежа (при получении из реестра (parcel, 1)) значение parcel
+reestr_parcel = winreestr_pull()[0] # забираем из кортежа (при получении из реестра (parcel, 1)) значение parcel
 txt = Entry(window, width=30)  # поле для ввода посылки
 txt.place(x=15, y=210) 
 txt.delete(0, "end")
-txt.insert(0, parcel_regedit[0])        
+txt.insert(0, reestr_parcel[0])        
 txt.focus()                   # при запуске программы фокусируемся в данном поле
 
 menu = Menu(tearoff=0) #пункты меню всплывающего в текстовом поле при нажатии правой клавиши

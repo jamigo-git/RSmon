@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['CLOU-TEST-operator.py'],
+a = Analysis(['clou-test-operator.py'],
              pathex=['D:\\MyProgram\\BIN'],
              binaries=[],
              datas=[],
@@ -23,7 +23,7 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           [],
-          name='CLOU-TEST-operator',
+          name='clou-test-operator',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,

@@ -53,12 +53,11 @@ def serial_tx(parcel):
         ser = serial.Serial(combo.get(), 9600, timeout = 1)
         
         if parcel == 1:
-            ser.setDTR(True)
-            ser.setRTS(False)
+            ser.setDTR(False)
+            ser.setRTS(True)
             parcel_send = '8116052033'
             parcel_full = bytes.fromhex(parcel_send)
             ser.write(parcel_full)
-            
             serial_rx(ser)                   
             ser.close()
             
@@ -68,7 +67,6 @@ def serial_tx(parcel):
             parcel_send = '812000065670'
             parcel_full = bytes.fromhex(parcel_send)
             ser.write(parcel_full)
-            
             serial_rx(ser)
             ser.close()
                         
@@ -90,7 +88,7 @@ def serial_rx(ser):
         if display_data_rx == b'':
             lbl_parcel_rx = Label(lbl_rx_data_dc, text = "                                 \n                            \n                               ")
             lbl_parcel_rx.place(x=5, y=5)
-            lbl_parcel_rx = Label(lbl_rx_data_dc, text = 'Нет данных!!!\nпопробуйте перезагрузить \nблок управления', foreground = 'red') 
+            lbl_parcel_rx = Label(lbl_rx_data_dc, text = 'Нет данных!!!\n попробуйте перезагрузить блок управления', foreground = 'red') 
             lbl_parcel_rx.place(x=5, y=5)
         else:
             lbl_parcel_rx = Label(lbl_rx_data_dc, text = "                                 \n                             \n                                  ")
@@ -114,7 +112,7 @@ window.title("Test-Operator")
 window.geometry('300x300')
 
 btn_opros = Button(window, text="Из реестра", command = winreestr_pull_company)
-btn_opros.place(x=200, y=35)
+btn_opros.place(x=190, y=35)
 
 reestr = winreestr_pull()       # присваиваем переменной кортеж значений (0-последняя посылка из реестра (кортеж), 1-последний выбраный COM-порт (кортеж))
 lbl0 = Label(window, text = "Выберите COM-порт:").place(x=15, y=15)

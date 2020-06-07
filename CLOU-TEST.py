@@ -148,6 +148,9 @@ def serial_tx(parcel):
         lbl_error_com = Label(lbl_rx_data_dc, text = "Не удалось открыть COM-порт\nПовторите попытку снова\n                \n                \n                  \n                \n                 ", foreground = 'red')
         lbl_error_com.place(x=5, y=5)
 
+#Функция запроса версии (проверка запрос-ответ) счетчика и блока управления
+
+
         
 #Функция чтения данных из COM-порта и приведения их в нормальный вид
 def serial_rx(ser, parcel_tx):
@@ -162,8 +165,56 @@ def serial_rx(ser, parcel_tx):
     ser.close()
     rx_dc1 = rx_dc(parcel_rx_up, parcel_tx)
     rx_dc1.crc_plata(parcel_rx_up)
-   
-    
+
+def serial_tx_ver(parcel):
+    try:
+        ser = serial.Serial(combo.get(), 9600, timeout = 1)
+        if parcel == 1:
+            ser.setDTR(False)
+            ser.setRTS(True)
+            parcel_send = '8116052033'
+            parcel_full = bytes.fromhex(parcel_send)
+            ser.write(parcel_full)
+            serial_rx_ver(ser)                   
+            ser.close()
+            
+        elif parcel == 2:
+            ser.setDTR(True)
+            ser.setRTS(False) 
+            parcel_send = '812000065670'
+            parcel_full = bytes.fromhex(parcel_send)
+            ser.write(parcel_full)
+            serial_rx_ver(ser)
+            ser.close()
+    except Exception:
+        lbl_error_com = Label(lbl_version, text = "Не удалось открыть COM-порт\nПовторите попытку снова\n                \n                              \n                                      ", foreground = 'red')
+        lbl_error_com.place(x=5, y=5)
+
+def serial_rx_ver(ser):
+    try:
+        display_data_rx1 = ser.read(23)
+        
+        display_data_rx = display_data_rx1[4:13]
+        if display_data_rx == b'':
+            lbl_parcel_rx = Label(lbl_version, text = "                                 \n                            \n                               ")
+            lbl_parcel_rx.place(x=5, y=5)
+            lbl_parcel_rx = Label(lbl_version, text = 'Нет данных!!!\n попробуйте перезагрузить блок управления', foreground = 'red') 
+            lbl_parcel_rx.place(x=5, y=5)
+        else:
+            lbl_parcel_rx = Label(lbl_version, text = "                                 \n                             \n                                  ")
+            lbl_parcel_rx.place(x=5, y=5)
+            lbl_parcel_rx = Label(lbl_version, text = display_data_rx, foreground = 'green') 
+            lbl_parcel_rx.place(x=5, y=5)
+            lbl_parcel_rx = Label(lbl_version, text = "                                 ")
+            lbl_parcel_rx.place(x=5, y=20)
+            lbl_parcel_rx = Label(lbl_version, text = 'Версия ПО                                                            \n                                       ', foreground = 'green') 
+            lbl_parcel_rx.place(x=5, y=20)
+    except Exception:
+        lbl_error_com = Label(lbl_version, text = "Нет принятых данных\nПроверьте соединение\nи настройка COM-порта\n                ", foreground = 'red')
+        lbl_error_com.place(x=5, y=5)
+
+
+
 #Main program
     
 window = Tk()  
@@ -237,14 +288,15 @@ btn_stop = Button(window, text="Остановить", command = lambda: serial_
 btn_stop.place(x=250, y=290)
 
 lbl_version = LabelFrame(window, text = "Версия ПО установки")
-lbl_version.place(x = 420, y=250, width = 155, heigh = 180)
-lbl_develop = Label(lbl_version, text = "В разработке")
-lbl_develop.place(x=5, y=5)
+lbl_version.place(x = 420, y=310, width = 155, heigh = 150)
 
-btn_opros = Button(lbl_version, text="Опросить ", command = lambda: serial_tx(bytes.fromhex(version_reply)))
+btn_opros = Button(lbl_version, text="Опросить счетчик", command = lambda: serial_tx_ver(1))
 btn_opros.pack(side = BOTTOM)
 
-lbl_rx_data_dc = LabelFrame(window, text = "Принятые данные (в разработке)")
+btn_opros = Button(lbl_version, text="Опросить блок уп", command = lambda: serial_tx_ver(2))
+btn_opros.pack(side = BOTTOM)
+
+lbl_rx_data_dc = LabelFrame(window, text = "Принятые данные")
 lbl_rx_data_dc.place(x=15, y=320, width = 350, heigh = 140)
 
 

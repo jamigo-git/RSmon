@@ -142,6 +142,8 @@ def serial_tx(parcel):
         lbl_error_com.place(x=5, y=5)
         ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
         winreestr_push(combo.get())
+        ser.setDTR(True)
+        ser.setRTS(False)
         ser.write(parcel)
        # serial_rx(ser,parcel)
     except Exception:

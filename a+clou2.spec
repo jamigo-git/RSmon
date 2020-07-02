@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['clou-test.py'],
+a = Analysis(['a+clou2.py'],
              pathex=['D:\\MyProgram\\BIN'],
              binaries=[],
              datas=[],
@@ -23,11 +23,11 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           [],
-          name='clou-test',
+          name='a+clou2',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
           upx_exclude=[],
           runtime_tmpdir=None,
-          console=False )
+          console=True )

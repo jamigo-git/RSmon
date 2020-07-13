@@ -1,0 +1,1 @@
+pg_basebackup -h 127.0.0.1 -U postgres -D D:\MyProgram\BIN\journal\backup_base

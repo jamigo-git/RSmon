@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter.ttk import Combobox, Radiobutton, Entry, Spinbox 
 import tkinter.ttk as ttk
 import datetime
+from datetime import date
 import ast
 import winreg 
 import psycopg2
@@ -62,21 +63,21 @@ def comments(model, SN):
     subprocess.Popen("C:\\Windows\\notepad.exe D:\\myprogram\\bin\\journal\\comments.txt")
 
 # Фукнция открытия карточки компьютера
-def PC_card(model, IP, SN, number_in_departament):
+def PC_card(model, SN, number_in_departament):
     window_card = Tk()
     window_card.bind_all("<Key>", _onKeyRelease, "+") 
-    window_card.title("Карточка компьютера " + model + "   IP " + IP)
+    window_card.title("Карточка компьютера " + model)
     window_card.geometry("620x500")
     Label(window_card, text = ("Последние комментарии:")).place(x=10, y=90)
     text_card = Text(window_card, width=50, height=10)
     text_card.place(x=10, y=110)
     text_card.bind("<Button-3>")
-    SUBD_get_PC(window_card, text_card, SN, IP)
+    SUBD_get_PC(window_card, text_card, SN)
     Label(window_card, text = ("Ваш комментарий:")).place(x=10, y=300)
     text_wr = Text(window_card, width=50, height=5)
     text_wr.place(x=10, y=320)
-    text_wr.bind("<Button-3>")
-    btn_wr = Button(window_card, text="Отправить", command = lambda: SUBD_push_PC(window_card, text_wr, SN, combo, sel.get(), text_card))
+    text_wr.bind("<Button-3>")                                                  
+    btn_wr = Button(window_card, text="Отправить", command = lambda: SUBD_push(window_card, text_wr, model, combo, sel.get(), text_card, 00))
     btn_wr.place(x=350, y=420)
     lbl01 = Label(window_card, text = "Выберите фамилию:").place(x=10, y=420)
     combo = Combobox(window_card, width = 13, values = surname)
@@ -96,7 +97,7 @@ def PC_card(model, IP, SN, number_in_departament):
 
 
 #Функция получения данных о компьютере из БД
-def SUBD_get_PC(window_card, text_card, SN, IP):
+def SUBD_get_PC(window_card, text_card, SN):
     try:
         # Подключение к БД
         con = psycopg2.connect(
@@ -113,7 +114,7 @@ def SUBD_get_PC(window_card, text_card, SN, IP):
         label_dbsuc.place(x=10, y=5)
 
     try:
-    # Считывание данных установки из таблицы установок
+    # Считывание данных ПК из таблицы installations
         cur = con.cursor()
         cur.execute("SELECT serial_number, name_pc, ip, alarms, radmin, windows, net_monitor, inkotex, other_soft FROM public.pc WHERE serial_number = \'%s\';" %SN)
         rows = cur.fetchall()
@@ -145,7 +146,7 @@ def SUBD_get_PC(window_card, text_card, SN, IP):
 
     try:
         # Считывание комментариев по данному компьютеру
-        cur.execute("SELECT date, time, author, commentary FROM public.comments WHERE serial_number = \'%s\' ORDER BY (date, time);" %SN)
+        cur.execute("SELECT date, time, author, commentary FROM public.comments WHERE serial_number = \'%s\' ORDER BY (date, time);" %name_pc)
         rows = cur.fetchall()
         for row in rows:
             text_card.insert(1.0, "\nДата: " + str(row[0]))
@@ -167,13 +168,16 @@ def installation_card(model, SN, number_in_departament):
     Label(window_card, text = ("Последние комментарии:")).place(x=10, y=90)
     text_card = Text(window_card, width=50, height=10)
     text_card.place(x=10, y=110)
-     
-    #scroll = Scrollbar(window_card, command=text_card.yview, width=50)
-    #scroll.place(x=530, y=110)
     SUBD_get(window_card, text_card, SN)
     Label(window_card, text = ("Ваш комментарий:")).place(x=10, y=300)
     text_wr = Text(window_card, width=50, height=5)
     text_wr.place(x=10, y=320)
+    Label(window_card, text = ("Новая дата:")).place(x=480, y=190)
+    poverka_text = Text(window_card, width=10, height=1)
+    poverka_text.place(x=480, y=215)
+    poverka_text.insert(1.0, 'ГГГГ-ММ-ДД')
+    poverka_wr = Button(window_card, text="Записать", command = lambda: SUBD_push_one(window_card, poverka_text, SN, number_in_departament))
+    poverka_wr.place(x=490, y=240)
     btn_wr = Button(window_card, text="Отправить", command = lambda: SUBD_push(window_card, text_wr, SN, combo, sel.get(), text_card, number_in_departament))
     btn_wr.place(x=350, y=420)
     lbl01 = Label(window_card, text = "Выберите фамилию:").place(x=10, y=420)
@@ -192,9 +196,8 @@ def installation_card(model, SN, number_in_departament):
     rad_alarm3.place(x=5, y=60)
         
 
-# Функция записи данных в БД (установки)
+# Функция записи комментариев в БД (установки)
 def SUBD_push(window_card, text_wr, SN, combo, alarms, text_card, number_in_departament):
-    print(alarms)
     try:
         # Подключение к БД
         con = psycopg2.connect(
@@ -238,7 +241,40 @@ def SUBD_push(window_card, text_wr, SN, combo, alarms, text_card, number_in_depa
     except:
         Label(window_card, text = "Не удалось записать данные в базу данных!!!", foreground = 'red').place(x=10, y=450)
     
-
+# Функция записи даты поверки (и других одиночных полей)
+def SUBD_push_one(window_card, poverka_text, SN, number_in_departament):
+    try:
+        # Подключение к БД
+        con = psycopg2.connect(
+          database="Virtual_department", 
+          user="postgres", 
+          password="777#igra", 
+          host="127.0.0.1", 
+          port="5432")
+        Label(window_card, text = "Подключение к базе данных: ОК            ", foreground = 'green').place(x=10, y=450)
+    except:
+        Label(window_card, text = "Подключение к базе данных отсутствует", foreground = 'red').place(x=10, y=450)
+    try:
+        #Запись комментария в таблицу БД
+        date_usr =  poverka_text.get(1.0, END).strip()
+        if date_usr == "ГГГГ-ММ-ДД":
+            Label(window_card, text = "Введите дату", foreground = 'red').place(x=480, y=270)
+        else:
+            try:
+                date(int(date_usr[0:4]),int(date_usr[5:7]),int(date_usr[8:10]))
+                Label(window_card, text = "Формат ок", foreground = 'green').place(x=480, y=270)
+                cur = con.cursor()
+                cur.execute("UPDATE public.installations SET poverka_date=%s WHERE serial_number = %s; ", (date_usr, SN))
+                con.commit() 
+                con.close()
+                Label(window_card, text = "Дата записана", foreground = 'green').place(x=480, y=270)
+            except:
+                Label(window_card, text = "Не формат!", foreground = 'red').place(x=480, y=270)
+        
+    except:
+        Label(window_card, text = "Не удалось записать данные в базу данных!!!", foreground = 'red').place(x=10, y=450)
+        
+       
 # Функция получения данных из базы по установке
 def SUBD_get(window_card, text_card, SN):
     try:
@@ -257,9 +293,9 @@ def SUBD_get(window_card, text_card, SN):
         label_dbsuc.place(x=10, y=5)
 
     try:
-        # Считывание данных установки из таблицы установок
+        #Считывание данных установки из таблицы установок
         cur = con.cursor()
-        cur.execute("SELECT serial_number, model, phases, alarms, inkotex, calibrovka, poverka FROM public.installations WHERE serial_number = \'%s\';" %SN)
+        cur.execute("SELECT serial_number, model, phases, alarms, inkotex, calibrovka, poverka, poverka_date FROM public.installations WHERE serial_number = \'%s\';" %SN)
         rows = cur.fetchall()
         for row in rows:
             Label(window_card, text = ("Серийный номер: " + row[0])).place(x=10, y=25)
@@ -281,6 +317,7 @@ def SUBD_get(window_card, text_card, SN):
                 Label(window_card, text = "Доработка Инкотекс: данные отсутствуют").place(x=250, y=45)
             Label(window_card, text = ("Счетчики калибровка: " + row[5])).place(x=250, y=65)
             Label(window_card, text = ("Счетчики поверка: " + row[6])).place(x=250, y=85)
+            Label(window_card, text = ("Дата поверки \n счетчика: \n" + str(row[7]))).place(x=480, y=130)
     except:
         Label(window_card, text = "Данные в таблице установок отсутсвуют!!!", foreground = 'red').place(x=10, y=25)
 
@@ -356,7 +393,7 @@ HX8100_3_1 = Button(lbl_HX8100_3, text="1-48", width = 10, command = lambda: ins
 HX8100_3_1.place(x=10, y=0)
 HX8100_3_2 = Button(lbl_HX8100_3, text="49-96", width = 10, command = lambda: installation_card('HX8100','080798', '1'), bg = alarm_color[0])
 HX8100_3_2.place(x=105, y=0)
-HX8100_3_PC = Button(lbl_HX8100_3, text="ПК", width = 3, command = lambda: PC_card('PC1', '192.168.0.202', '080798', '1'), bg = alarm_color[0])
+HX8100_3_PC = Button(lbl_HX8100_3, text="ПК", width = 3, command = lambda: PC_card('PC1', '080798', '1'), bg = alarm_color[0])
 HX8100_3_PC.place(x=200, y=0)
 Hovertip(HX8100_3_1, ['HX-8100', ' SN080798'])
 Hovertip(HX8100_3_2, ['HX-8100', ' SN080798'])
@@ -370,7 +407,7 @@ HX8100_2_1 = Button(lbl_HX8100_2, text="1-48", width = 10, command = lambda: ins
 HX8100_2_1.place(x=50, y=0)
 HX8100_2_2 = Button(lbl_HX8100_2, text="49-96", width = 10, command = lambda: installation_card('HX8100', '080799', '2'), bg = alarm_color[0])
 HX8100_2_2.place(x=145, y=0)
-HX8100_2_PC = Button(lbl_HX8100_2, text="ПК", width = 3, command = lambda: PC_card('PC2', '192.168.0.163', '080799', '2'), bg = alarm_color[0])
+HX8100_2_PC = Button(lbl_HX8100_2, text="ПК", width = 3, command = lambda: PC_card('PC2', '080799', '2'), bg = alarm_color[0])
 HX8100_2_PC.place(x=10, y=0)
 Hovertip(HX8100_2_1, ['HX-8100', ' SN080799'])
 Hovertip(HX8100_2_2, ['HX-8100', ' SN080799'])
@@ -384,7 +421,7 @@ poverka_SY8125_1 = Label(lbl_SY8125_1, text = ("Поверка: " + str(alarm_co
 poverka_SY8125_1.place(x=45, y=30)
 SY8125_1 = Button(lbl_SY8125_1, text="1-24", width = 15, command = lambda: installation_card('SY8125', '703143', '3'), bg = alarm_color[0])
 SY8125_1.place(x=10, y=0)
-SY8125_1_PC = Button(lbl_SY8125_1, text="ПК", width = 3, command = lambda: PC_card('PC3', '192.168.0.242', '703143', '3'), bg = alarm_color[0])
+SY8125_1_PC = Button(lbl_SY8125_1, text="ПК", width = 3, command = lambda: PC_card('PC3', '703143', '3'), bg = alarm_color[0])
 SY8125_1_PC.place(x=10, y=30)
 Hovertip(SY8125_1, ['SY8125', ' SN703143'])
 Hovertip(SY8125_1_PC, ['Windows XP', 'IP 192.168.0.242'])
@@ -397,7 +434,7 @@ poverka_SY8125_2 = Label(lbl_SY8125_2, text = ("Поверка: " + str(alarm_co
 poverka_SY8125_2.place(x=45, y=0)
 SY8125_2 = Button(lbl_SY8125_2, text="1-24", width = 15, command = lambda: installation_card('SY8125', '703146', '4'), bg = alarm_color[0])
 SY8125_2.place(x=10, y=30)
-SY8125_2_PC = Button(lbl_SY8125_2, text="ПК", width = 3, command = lambda: PC_card('PC4', '192.168.0.97', '703146', '4'), bg = alarm_color[0])
+SY8125_2_PC = Button(lbl_SY8125_2, text="ПК", width = 3, command = lambda: PC_card('PC4', '703146', '4'), bg = alarm_color[0])
 SY8125_2_PC.place(x=10, y=0)
 Hovertip(SY8125_2, ['SY8125', ' SN703146'])
 Hovertip(SY8125_2_PC, ['Windows XP', 'IP 192.168.0.97'])
@@ -421,7 +458,7 @@ UAPS1M_6 = Button(lbl_UAPS1M_6, text="Уст.", width = 3, command = lambda: ins
 UAPS1M_6.place(x=20, y=00)
 UAPS1M_6_1 = Button(lbl_UAPS1M_6, text="1-6", width = 3, command = lambda: installation_card('UAPS-1M', '102', '6'), bg = alarm_color[0])
 UAPS1M_6_1.place(x=40, y=30)
-UAPS1M_6_PC = Button(lbl_UAPS1M_6, text="ПК", width = 3, command = lambda: PC_card('PC6', '192.168.0.169', '102', '6'), bg = alarm_color[0])
+UAPS1M_6_PC = Button(lbl_UAPS1M_6, text="ПК", width = 3, command = lambda: PC_card('PC6', '102', '6'), bg = alarm_color[0])
 UAPS1M_6_PC.place(x=0, y=30)
 Hovertip(UAPS1M_6, ['УАПС-1М', 'SN102'])
 Hovertip(UAPS1M_6_1, ['УАПС-1М', 'SN102'])
@@ -435,7 +472,7 @@ UAPS1M_7 = Button(lbl_UAPS1M_7, text="Уст.", width = 3, command = lambda: ins
 UAPS1M_7.place(x=20, y=00)
 UAPS1M_7_1 = Button(lbl_UAPS1M_7, text="1-6", width = 3, command = lambda: installation_card('UAPS-1M', '61207', '7'), bg = alarm_color[0])
 UAPS1M_7_1.place(x=40, y=30)
-UAPS1M_7_PC = Button(lbl_UAPS1M_7, text="ПК", width = 3, command = lambda: PC_card('PC7', '192.168.0.37', '61207', '7'), bg = alarm_color[0])
+UAPS1M_7_PC = Button(lbl_UAPS1M_7, text="ПК", width = 3, command = lambda: PC_card('PC7', '61207', '7'), bg = alarm_color[0])
 UAPS1M_7_PC.place(x=0, y=30)
 Hovertip(UAPS1M_7, ['УАПС-1М', 'SN61207'])
 Hovertip(UAPS1M_7_1, ['УАПС-1М', 'SN61207'])
@@ -449,7 +486,7 @@ UAPS1M_8 = Button(lbl_UAPS1M_8, text="Уст.", width = 3, command = lambda: ins
 UAPS1M_8.place(x=20, y=00)
 UAPS1M_8_1 = Button(lbl_UAPS1M_8, text="1-6", width = 3, command = lambda: installation_card('UAPS-1M', '109', '8'), bg = alarm_color[0])
 UAPS1M_8_1.place(x=40, y=30)
-UAPS1M_8_PC = Button(lbl_UAPS1M_8, text="ПК", width = 3, command = lambda: PC_card('PC8', '192.168.0.17', '109', '8'), bg = alarm_color[0])
+UAPS1M_8_PC = Button(lbl_UAPS1M_8, text="ПК", width = 3, command = lambda: PC_card('PC8', '109', '8'), bg = alarm_color[0])
 UAPS1M_8_PC.place(x=0, y=30)
 Hovertip(UAPS1M_8, ['УАПС-1М', 'SN109'])
 Hovertip(UAPS1M_8_1, ['УАПС-1М', 'SN109'])
@@ -463,7 +500,7 @@ UAPS1M_9 = Button(lbl_UAPS1M_9, text="Уст.", width = 3, command = lambda: ins
 UAPS1M_9.place(x=20, y=00)
 UAPS1M_9_1 = Button(lbl_UAPS1M_9, text="1-6", width = 3, command = lambda: installation_card('UAPS-1M', '050908', '9'), bg = alarm_color[0])
 UAPS1M_9_1.place(x=40, y=30)
-UAPS1M_9_PC = Button(lbl_UAPS1M_9, text="ПК", width = 3, command = lambda: PC_card('PC9', '192.168.0.40', '050908', '9'), bg = alarm_color[0])
+UAPS1M_9_PC = Button(lbl_UAPS1M_9, text="ПК", width = 3, command = lambda: PC_card('PC9', '050908', '9'), bg = alarm_color[0])
 UAPS1M_9_PC.place(x=0, y=30)
 Hovertip(UAPS1M_9, ['УАПС-1М', 'SN050908'])
 Hovertip(UAPS1M_9_1, ['УАПС-1М', 'SN050908'])
@@ -481,7 +518,7 @@ HX8300_10_3 = Button(lbl_HX8300_10, text="49-\n72", width = 3, height = 3, comma
 HX8300_10_3.place(x=5, y=160)
 HX8300_10_4 = Button(lbl_HX8300_10, text="73-\n96", width = 3, height = 3, command = lambda: installation_card('HX8300','0807102', '10'), bg = alarm_color[0])
 HX8300_10_4.place(x=5, y=225)
-HX8300_10_PC = Button(lbl_HX8300_10, text="ПК", width = 3, command = lambda: PC_card('PC10', '192.168.0.43','0807102', '10'), bg = alarm_color[0])
+HX8300_10_PC = Button(lbl_HX8300_10, text="ПК", width = 3, command = lambda: PC_card('PC10','0807102', '10'), bg = alarm_color[0])
 HX8300_10_PC.place(x=5, y=0)
 Hovertip(HX8300_10_1, ['HX-8300', ' SN0807102'])
 Hovertip(HX8300_10_2, ['HX-8300', ' SN0807102'])
@@ -501,7 +538,7 @@ HX8300_11_3 = Button(lbl_HX8300_11, text="49-\n72", width = 3, height = 3, comma
 HX8300_11_3.place(x=5, y=160)
 HX8300_11_4 = Button(lbl_HX8300_11, text="73-\n96", width = 3, height = 3, command = lambda: installation_card('HX8300','0807103', '11'), bg = alarm_color[0])
 HX8300_11_4.place(x=5, y=225)
-HX8300_11_PC = Button(lbl_HX8300_11, text="ПК", width = 3, command = lambda: PC_card('PC11', '000.000.000.000','0807103', '11'), bg = alarm_color[0])
+HX8300_11_PC = Button(lbl_HX8300_11, text="ПК", width = 3, command = lambda: PC_card('PC11','0807103', '11'), bg = alarm_color[0])
 HX8300_11_PC.place(x=5, y=0)
 Hovertip(HX8300_11_1, ['HX-8300', ' SN0807103'])
 Hovertip(HX8300_11_2, ['HX-8300', ' SN0807103'])
@@ -521,7 +558,7 @@ CL3005_1_2 = Button(lbl_CL3005_1, text="13-24", width = 10, command = lambda: in
 CL3005_1_2.place(x=105, y=30)
 CL3005_1_ST = Button(lbl_CL3005_1, text="Уст.", width = 3, command = lambda: installation_card('CL3005-24','3028', '12'), bg = alarm_color[0])
 CL3005_1_ST.place(x=200, y=30)
-CL3005_1_PC = Button(lbl_CL3005_1, text="ПК", width = 3, command = lambda: PC_card('PC12', '192.168.0.185','3028', '12'), bg = alarm_color[0])
+CL3005_1_PC = Button(lbl_CL3005_1, text="ПК", width = 3, command = lambda: PC_card('PC12','3028', '12'), bg = alarm_color[0])
 CL3005_1_PC.place(x=200, y=0)
 Hovertip(CL3005_1_1, ['CL3005-24', ' SN3028'])
 Hovertip(CL3005_1_2, ['CL3005-24', ' SN3028'])
@@ -540,7 +577,7 @@ CL3005_2_2 = Button(lbl_CL3005_2, text="13-24", width = 10, command = lambda: in
 CL3005_2_2.place(x=105, y=30)
 CL3005_2_ST = Button(lbl_CL3005_2, text="Уст.", width = 3, command = lambda: installation_card('CL3005-24','3042', '13'), bg = alarm_color[0])
 CL3005_2_ST.place(x=200, y=30)
-CL3005_2_PC = Button(lbl_CL3005_2, text="ПК", width = 3, command = lambda: PC_card('PC13', '192.168.0.253','3042', '13'), bg = alarm_color[0])
+CL3005_2_PC = Button(lbl_CL3005_2, text="ПК", width = 3, command = lambda: PC_card('PC13','3042', '13'), bg = alarm_color[0])
 CL3005_2_PC.place(x=200, y=0)
 Hovertip(CL3005_2_1, ['CL3005-24', ' SN3042'])
 Hovertip(CL3005_2_1, ['CL3005-24', ' SN3042'])
@@ -557,7 +594,7 @@ CL1001_1_1 = Button(lbl_CL1001_1, text="1-24", width = 10, command = lambda: ins
 CL1001_1_1.place(x=50, y=0)
 CL1001_1_ST = Button(lbl_CL1001_1, text="Уст.", width = 3, command = lambda: installation_card('CL1001','1009', '14'), bg = alarm_color[0])
 CL1001_1_ST.place(x=10, y=0)
-CL1001_1_PC = Button(lbl_CL1001_1, text="ПК", width = 3, command = lambda: PC_card('PC14', '192.168.0.201','1009', '14'), bg = alarm_color[0])
+CL1001_1_PC = Button(lbl_CL1001_1, text="ПК", width = 3, command = lambda: PC_card('PC14','1009', '14'), bg = alarm_color[0])
 CL1001_1_PC.place(x=10, y=30)
 Hovertip(CL1001_1_1, ['CL3005-24', ' SN1009'])
 Hovertip(CL1001_1_ST, ['CL3005-24', ' SN1009'])
@@ -573,7 +610,7 @@ CL1001_2_1 = Button(lbl_CL1001_2, text="1-24", width = 10, command = lambda: ins
 CL1001_2_1.place(x=10, y=30)
 CL1001_2_ST = Button(lbl_CL1001_2, text="Уст.", width = 3, command = lambda: installation_card('CL1001','1008', '15'), bg = alarm_color[0])
 CL1001_2_ST.place(x=110, y=30)
-CL1001_2_PC = Button(lbl_CL1001_2, text="ПК", width = 3, command = lambda: PC_card('PC15', '192.168.0.47','1008', '15'), bg = alarm_color[0])
+CL1001_2_PC = Button(lbl_CL1001_2, text="ПК", width = 3, command = lambda: PC_card('PC15','1008', '15'), bg = alarm_color[0])
 CL1001_2_PC.place(x=110, y=0)
 Hovertip(CL1001_2_1, ['CL3005-24', ' SN1008'])
 Hovertip(CL1001_2_ST, ['CL3005-24', ' SN1008'])
@@ -587,7 +624,7 @@ poverka_SY8125_3 = Label(lbl_SY8125_3, text = ("Поверка: " + str(alarm_co
 poverka_SY8125_3.place(x=0, y=30)
 SY8125_3 = Button(lbl_SY8125_3, text="1-24", width = 10, command = lambda: installation_card('SY8125', '703154', '16'), bg = alarm_color[0])
 SY8125_3.place(x=50, y=0)
-SY8125_3_PC = Button(lbl_SY8125_3, text="ПК", width = 3, command = lambda: PC_card('PC16', '192.168.0.155', '703154', '16'), bg = alarm_color[0])
+SY8125_3_PC = Button(lbl_SY8125_3, text="ПК", width = 3, command = lambda: PC_card('PC16', '703154', '16'), bg = alarm_color[0])
 SY8125_3_PC.place(x=10, y=0)
 Hovertip(SY8125_3, ['SY8125', ' SN703154'])
 Hovertip(SY8125_3_PC, ['Windows XP', 'IP 192.168.0.155'])
@@ -600,7 +637,7 @@ poverka_SY8125_4 = Label(lbl_SY8125_4, text = ("Поверка: " + str(alarm_co
 poverka_SY8125_4.place(x=0, y=30)
 SY8125_4 = Button(lbl_SY8125_4, text="1-24", width = 10, command = lambda: installation_card('SY8125', '703152', '17'), bg = alarm_color[0])
 SY8125_4.place(x=50, y=0)
-SY8125_4_PC = Button(lbl_SY8125_4, text="ПК", width = 3, command = lambda: PC_card('PC17', '192.168.0.197', '703152', '17'), bg = alarm_color[0])
+SY8125_4_PC = Button(lbl_SY8125_4, text="ПК", width = 3, command = lambda: PC_card('PC17', '703152', '17'), bg = alarm_color[0])
 SY8125_4_PC.place(x=10, y=0)
 Hovertip(SY8125_4, ['SY8125', ' SN703152'])
 Hovertip(SY8125_4_PC, ['Windows XP', 'IP 192.168.0.197'])
@@ -625,9 +662,9 @@ lbl_SY8125_6.place(x = 760, y=285, width = 150, heigh = 85)
 poverka_SY8125_6 = Label(lbl_SY8125_6, text = ("Поверка: " + str(alarm_color[1])) , fg = alarm_color[2])
 poverka_SY8125_6.place(x=50, y=10)
 SY8125_6 = Button(lbl_SY8125_6, text="1-24", width = 10, command = lambda: installation_card('SY8125', '703151', '19'), bg = alarm_color[0])
-SY8125_6.place(x=50, y=30)
-SY8125_6_PC = Button(lbl_SY8125_6, text="ПК", width = 3, command = lambda: PC_card('PC19', '192.168.0.134', '703151', '19'), bg = alarm_color[0])
-SY8125_6_PC.place(x=10, y=30)
+SY8125_6.place(x=10, y=30)
+SY8125_6_PC = Button(lbl_SY8125_6, text="ПК", width = 3, command = lambda: PC_card('PC19', '703151', '19'), bg = alarm_color[0])
+SY8125_6_PC.place(x=105, y=30)
 Hovertip(SY8125_5, ['SY8125', ' SN703151'])
 Hovertip(SY8125_5_PC, ['Windows XP', 'IP 192.168.0.134'])
 
@@ -643,7 +680,7 @@ CL3005_3_2 = Button(lbl_CL3005_3, text="13-24", width = 10, command = lambda: in
 CL3005_3_2.place(x=135, y=0)
 CL3005_3_ST = Button(lbl_CL3005_3, text="Уст.", width = 3, command = lambda: installation_card('CL3005-24','3035', '20'), bg = alarm_color[0])
 CL3005_3_ST.place(x=0, y=0)
-CL3005_3_PC = Button(lbl_CL3005_3, text="ПК", width = 3, command = lambda: PC_card('PC20', '192.168.0.14','3035', '20'), bg = alarm_color[0])
+CL3005_3_PC = Button(lbl_CL3005_3, text="ПК", width = 3, command = lambda: PC_card('PC20','3035', '20'), bg = alarm_color[0])
 CL3005_3_PC.place(x=0, y=30)
 Hovertip(CL3005_3_1, ['CL3005-24', ' SN3035'])
 Hovertip(CL3005_3_2, ['CL3005-24', ' SN3035'])
@@ -662,7 +699,7 @@ CL3005_4_2 = Button(lbl_CL3005_4, text="13-24", width = 10, command = lambda: in
 CL3005_4_2.place(x=95, y=30)
 CL3005_4_ST = Button(lbl_CL3005_4, text="Уст.", width = 3, command = lambda: installation_card('CL3005-24','3036', '21'), bg = alarm_color[0])
 CL3005_4_ST.place(x=190, y=30)
-CL3005_4_PC = Button(lbl_CL3005_4, text="ПК", width = 3, command = lambda: PC_card('PC21', '192.168.0.13','3036', '21'), bg = alarm_color[0])
+CL3005_4_PC = Button(lbl_CL3005_4, text="ПК", width = 3, command = lambda: PC_card('PC21','3036', '21'), bg = alarm_color[0])
 CL3005_4_PC.place(x=190, y=0)
 Hovertip(CL3005_4_1, ['CL3005-24', ' SN3036'])
 Hovertip(CL3005_4_2, ['CL3005-24', ' SN3036'])
@@ -681,7 +718,7 @@ CL3005_5_2 = Button(lbl_CL3005_5, text="13-24", width = 10, command = lambda: in
 CL3005_5_2.place(x=145, y=0)
 CL3005_5_ST = Button(lbl_CL3005_5, text="Уст.", width = 3, command = lambda: installation_card('CL3005-24','3032', '22'), bg = alarm_color[0])
 CL3005_5_ST.place(x=10, y=0)
-CL3005_5_PC = Button(lbl_CL3005_5, text="ПК", width = 3, command = lambda: PC_card('PC22', '192.168.0.200','3032', '22'), bg = alarm_color[0])
+CL3005_5_PC = Button(lbl_CL3005_5, text="ПК", width = 3, command = lambda: PC_card('PC22','3032', '22'), bg = alarm_color[0])
 CL3005_5_PC.place(x=10, y=30)
 Hovertip(CL3005_5_1, ['CL3005-24', ' SN3032'])
 Hovertip(CL3005_5_2, ['CL3005-24', ' SN3032'])
@@ -700,7 +737,7 @@ CL1001_3_2 = Button(lbl_CL1001_2, text="13-24", width = 6, command = lambda: ins
 CL1001_3_2.place(x=150, y=0)
 CL1001_3_ST = Button(lbl_CL1001_2, text="Уст.", width = 3, command = lambda: installation_card('CL1001','1015', '23'), bg = alarm_color[0])
 CL1001_3_ST.place(x=10, y=0)
-CL1001_3_PC = Button(lbl_CL1001_2, text="ПК", width = 3, command = lambda: PC_card('PC23', '192.168.0.100','1015', '23'), bg = alarm_color[0])
+CL1001_3_PC = Button(lbl_CL1001_2, text="ПК", width = 3, command = lambda: PC_card('PC23','1015', '23'), bg = alarm_color[0])
 CL1001_3_PC.place(x=50, y=0)
 Hovertip(CL1001_3_1, ['CL1001-24', ' SN1015'])
 Hovertip(CL1001_3_2, ['CL1001-24', ' SN1015'])
@@ -719,7 +756,7 @@ CL1005_1_2 = Button(lbl_CL1005_1, text="13-48", width = 6, command = lambda: ins
 CL1005_1_2.place(x=10, y=15)
 CL1005_1_ST = Button(lbl_CL1005_1, text="Уст.", width = 3, command = lambda: installation_card('CL1001','1012', '24'), bg = alarm_color[0])
 CL1005_1_ST.place(x=170, y=15)
-CL1005_1_PC = Button(lbl_CL1005_1, text="ПК", width = 3, command = lambda: PC_card('PC24', '192.168.0.245','1012', '24'), bg = alarm_color[0])
+CL1005_1_PC = Button(lbl_CL1005_1, text="ПК", width = 3, command = lambda: PC_card('PC24','1012', '24'), bg = alarm_color[0])
 CL1005_1_PC.place(x=70, y=15)
 Hovertip(CL1005_1_1, ['CL1005-48', ' SN1012'])
 Hovertip(CL1005_1_2, ['CL1005-48', ' SN1012'])
@@ -738,7 +775,7 @@ CL3005_6_2 = Button(lbl_CL3005_6, text="13-24", width = 10, command = lambda: in
 CL3005_6_2.place(x=135, y=0)
 CL3005_6_ST = Button(lbl_CL3005_6, text="Уст.", width = 3, command = lambda: installation_card('CL3005-24','3044', '25'), bg = alarm_color[0])
 CL3005_6_ST.place(x=0, y=0)
-CL3005_6_PC = Button(lbl_CL3005_6, text="ПК", width = 3, command = lambda: PC_card('PC25', '192.168.0.247','3044', '25'), bg = alarm_color[0])
+CL3005_6_PC = Button(lbl_CL3005_6, text="ПК", width = 3, command = lambda: PC_card('PC25','3044', '25'), bg = alarm_color[0])
 CL3005_6_PC.place(x=0, y=30)
 Hovertip(CL3005_6_1, ['CL3005-24', ' SN3044'])
 Hovertip(CL3005_6_2, ['CL3005-24', ' SN3044'])
@@ -757,7 +794,7 @@ SY8126_1_2 = Button(lbl_SY8126_1, text="13-24", width = 10, command = lambda: in
 SY8126_1_2.place(x=145, y=0)
 SY8126_1_ST = Button(lbl_SY8126_1, text="Уст.", width = 3, command = lambda: installation_card('SY8126','704202', '26'), bg = alarm_color[0])
 SY8126_1_ST.place(x=10, y=0)
-SY8126_1_PC = Button(lbl_SY8126_1, text="ПК", width = 3, command = lambda: PC_card('PC26', '192.168.0.18','704202', '26'), bg = alarm_color[0])
+SY8126_1_PC = Button(lbl_SY8126_1, text="ПК", width = 3, command = lambda: PC_card('PC26','704202', '26'), bg = alarm_color[0])
 SY8126_1_PC.place(x=10, y=30)
 Hovertip(SY8126_1_1, ['SY8126', ' 704202'])
 Hovertip(SY8126_1_2, ['SY8126', ' 704202'])
@@ -776,7 +813,7 @@ SY8126_2_2 = Button(lbl_SY8126_2, text="13-24", width = 10, command = lambda: in
 SY8126_2_2.place(x=105, y=30)
 SY8126_2_ST = Button(lbl_SY8126_2, text="Уст.", width = 3, command = lambda: installation_card('SY8126','704203', '27'), bg = alarm_color[0])
 SY8126_2_ST.place(x=200, y=30)
-SY8126_2_PC = Button(lbl_SY8126_2, text="ПК", width = 3, command = lambda: PC_card('PC27', '192.168.0.16','704203', '27'), bg = alarm_color[0])
+SY8126_2_PC = Button(lbl_SY8126_2, text="ПК", width = 3, command = lambda: PC_card('PC27','704203', '27'), bg = alarm_color[0])
 SY8126_2_PC.place(x=200, y=0)
 Hovertip(SY8126_2_1, ['SY8126', ' SN704203'])
 Hovertip(SY8126_2_2, ['SY8126', ' SN704203'])
@@ -795,7 +832,7 @@ SY8126_3_2 = Button(lbl_SY8126_3, text="13-24", width = 10, command = lambda: in
 SY8126_3_2.place(x=145, y=0)
 SY8126_3_ST = Button(lbl_SY8126_3, text="Уст.", width = 3, command = lambda: installation_card('CL3005','3038', '28'), bg = alarm_color[0])
 SY8126_3_ST.place(x=10, y=0)
-SY8126_3_PC = Button(lbl_SY8126_3, text="ПК", width = 3, command = lambda: PC_card('PC28', '192.168.0.101','3038', '28'), bg = alarm_color[0])
+SY8126_3_PC = Button(lbl_SY8126_3, text="ПК", width = 3, command = lambda: PC_card('PC28','3038', '28'), bg = alarm_color[0])
 SY8126_3_PC.place(x=10, y=30)
 Hovertip(SY8126_3_1, ['CL30005', ' SN3038'])
 Hovertip(SY8126_3_2, ['CL30005', ' SN3038'])
@@ -814,7 +851,7 @@ SY8126_2_2 = Button(lbl_SY8126_2, text="13-24", width = 10, command = lambda: in
 SY8126_2_2.place(x=105, y=30)
 SY8126_2_ST = Button(lbl_SY8126_2, text="Уст.", width = 3, command = lambda: installation_card('SY8126','704204', '29'), bg = alarm_color[0])
 SY8126_2_ST.place(x=200, y=30)
-SY8126_2_PC = Button(lbl_SY8126_2, text="ПК", width = 3, command = lambda: PC_card('PC29', '000.000.000.000','704204', '29'), bg = alarm_color[0])
+SY8126_2_PC = Button(lbl_SY8126_2, text="ПК", width = 3, command = lambda: PC_card('PC29','704204', '29'), bg = alarm_color[0])
 SY8126_2_PC.place(x=200, y=0)
 Hovertip(SY8126_2_1, ['SY8126', ' SN704204'])
 Hovertip(SY8126_2_2, ['SY8126', ' SN704204'])
@@ -833,7 +870,7 @@ CL3005_7_2 = Button(lbl_CL3005_7, text="13-24", width = 10, command = lambda: in
 CL3005_7_2.place(x=145, y=0)
 CL3005_7_ST = Button(lbl_CL3005_7, text="Уст.", width = 3, command = lambda: installation_card('CL3005-24','3030', '30'), bg = alarm_color[0])
 CL3005_7_ST.place(x=10, y=0)
-CL3005_7_PC = Button(lbl_CL3005_7, text="ПК", width = 3, command = lambda: PC_card('PC30', '192.168.0.180','3030', '30'), bg = alarm_color[0])
+CL3005_7_PC = Button(lbl_CL3005_7, text="ПК", width = 3, command = lambda: PC_card('PC30','3030', '30'), bg = alarm_color[0])
 CL3005_7_PC.place(x=10, y=30)
 Hovertip(CL3005_7_1, ['CL3005-24', ' SN3030'])
 Hovertip(CL3005_7_2, ['CL3005-24', ' SN3030'])
@@ -852,7 +889,7 @@ CL3005_8_2 = Button(lbl_CL3005_8, text="13-24", width = 10, command = lambda: in
 CL3005_8_2.place(x=105, y=30)
 CL3005_8_ST = Button(lbl_CL3005_8, text="Уст.", width = 3, command = lambda: installation_card('CL3005-24','3029', '31'), bg = alarm_color[0])
 CL3005_8_ST.place(x=200, y=30)
-CL3005_8_PC = Button(lbl_CL3005_8, text="ПК", width = 3, command = lambda: PC_card('PC31', '192.168.0.111','3029', '31'), bg = alarm_color[0])
+CL3005_8_PC = Button(lbl_CL3005_8, text="ПК", width = 3, command = lambda: PC_card('PC31','3029', '31'), bg = alarm_color[0])
 CL3005_8_PC.place(x=200, y=0)
 Hovertip(CL3005_8_1, ['CL3005-24', 'SN3029'])
 Hovertip(CL3005_8_2, ['CL3005-24', 'SN3029'])
@@ -881,7 +918,7 @@ lbl_Functional_3ph_1 = LabelFrame(window, text = "34")
 lbl_Functional_3ph_1.place(x = 130, y=640, width = 90, heigh = 60)
 Functional_3ph_1 = Button(lbl_Functional_3ph_1, text="1", width = 3, command = lambda: installation_card('Functional_3ph', '000001', '34'), bg = alarm_color[0])
 Functional_3ph_1.place(x=10, y=0)
-Functional_3ph_PC_1 = Button(lbl_Functional_3ph_1, text="ПК", width = 3, command = lambda: PC_card('PC34', '192.168.194.19', '000001', '34'), bg = alarm_color[0])
+Functional_3ph_PC_1 = Button(lbl_Functional_3ph_1, text="ПК", width = 3, command = lambda: PC_card('PC34', '000001', '34'), bg = alarm_color[0])
 Functional_3ph_PC_1.place(x=50, y=00)
 Hovertip(Functional_3ph_1, ['Functional_3ph', '000001'])
 Hovertip(Functional_3ph_PC_1, ['Windows 7', 'IP 192.168.194.19'])
@@ -892,7 +929,7 @@ lbl_Functional_3ph_2 = LabelFrame(window, text = "35")
 lbl_Functional_3ph_2.place(x = 20, y=640, width = 90, heigh = 60)
 Functional_3ph_2 = Button(lbl_Functional_3ph_2, text="1", width = 3, command = lambda: installation_card('Functional_3ph','000035', '35'), bg = alarm_color[0])
 Functional_3ph_2.place(x=10, y=0)
-Functional_3ph_PC_2 = Button(lbl_Functional_3ph_2, text="ПК", width = 3, command = lambda: PC_card('PC35', '000.000.000.000','000035', '35'), bg = alarm_color[0])
+Functional_3ph_PC_2 = Button(lbl_Functional_3ph_2, text="ПК", width = 3, command = lambda: PC_card('PC35','000035', '35'), bg = alarm_color[0])
 Functional_3ph_PC_2.place(x=50, y=0)
 Hovertip(Functional_3ph_2, ['Functional_3ph', '000035'])
 Hovertip(Functional_3ph_PC_2, ['Windows 7', 'IP 000.000.000.000'])
@@ -902,7 +939,7 @@ alarm_color = button_color('061101401')
 lbl_Functional_1ph_1 = LabelFrame(window, text = "36")
 lbl_Functional_1ph_1.place(x = 130, y=700, width = 90, heigh = 60)
 Functional_1ph_1 = Button(lbl_Functional_1ph_1, text="1", width = 3, command = lambda: installation_card('Functional_1ph','061101401', '36'), bg = alarm_color[0])
-Functional_1ph_PC_3 = Button(lbl_Functional_1ph_1, text="ПК", width = 3, command = lambda: PC_card('PC36', '000.000.000.000','061101401', '36'), bg = alarm_color[0])
+Functional_1ph_PC_3 = Button(lbl_Functional_1ph_1, text="ПК", width = 3, command = lambda: PC_card('PC36','061101401', '36'), bg = alarm_color[0])
 Functional_1ph_PC_3.place(x=50, y=0)
 Functional_1ph_1.place(x=10, y=0)
 Hovertip(Functional_1ph_1, ['Functional_1ph', '061101401'])
@@ -914,7 +951,7 @@ lbl_Functional_1ph_2 = LabelFrame(window, text = "37")
 lbl_Functional_1ph_2.place(x = 20, y=700, width = 90, heigh = 60)
 Functional_1ph_2 = Button(lbl_Functional_1ph_2, text="1", width = 3, command = lambda: installation_card('Functional_1ph','000004', '37'), bg = alarm_color[0])
 Functional_1ph_2.place(x=10, y=0)
-Functional_1ph_2_PC_4 = Button(lbl_Functional_1ph_2, text="ПК", width = 3, command = lambda: PC_card('PC37', '000.000.000.000','000004', '37'), bg = alarm_color[0])
+Functional_1ph_2_PC_4 = Button(lbl_Functional_1ph_2, text="ПК", width = 3, command = lambda: PC_card('PC37','000004', '37'), bg = alarm_color[0])
 Functional_1ph_2_PC_4.place(x=50, y=00)
 Hovertip(Functional_1ph_2, ['Functional_1ph', '000004'])
 Hovertip(Functional_1ph_2_PC_4, ['Windows 7', 'IP 000.000.000.000'])
@@ -925,7 +962,7 @@ lbl_Rele_201TLO = LabelFrame(window, text = "39")
 lbl_Rele_201TLO.place(x = 20, y=10, width = 90, heigh = 60)
 Rele_201TLO = Button(lbl_Rele_201TLO, text="1", width = 3, command = lambda: installation_card('Rele_201TLO','000039', '39'), bg = alarm_color[0])
 Rele_201TLO.place(x=50, y=0)
-Rele_201TLO_PC = Button(lbl_Rele_201TLO, text="ПК", width = 3, command = lambda: PC_card('PC39', '192.168.0.131','000039', '39'), bg = alarm_color[0])
+Rele_201TLO_PC = Button(lbl_Rele_201TLO, text="ПК", width = 3, command = lambda: PC_card('PC39','000039', '39'), bg = alarm_color[0])
 Rele_201TLO_PC.place(x=10, y=0)
 Hovertip(Rele_201TLO, ['Rele_201TLO', '000039'])
 Hovertip(Rele_201TLO_PC, ['Windows XP', 'IP 192.168.0.131'])

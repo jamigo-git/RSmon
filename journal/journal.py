@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from tkinter import *  
 from tkinter.ttk import Combobox, Radiobutton, Entry, Spinbox 
 import tkinter.ttk as ttk
@@ -384,6 +386,9 @@ commentas = Button(window, text="Все комменты", width = 13, command =
 commentas.place(x=1100, y=20)
 scheme_office_1 = Button(window, text="Схема стек.", width = 13, command = lambda: subprocess.Popen("C:\\Program Files\\OpenOffice 4\\program\\sdraw.exe D:\\myprogram\\bin\\journal\\scheme1.odg"))
 scheme_office_1.place(x=1100, y=50)
+scheme_office_2 = Button(window, text="Схема A2", width = 13, command = lambda: subprocess.Popen("C:\\Program Files\\OpenOffice 4\\program\\sdraw.exe D:\\myprogram\\bin\\journal\\scheme2.odg"))
+scheme_office_2.place(x=1100, y=80)
+
 
 #Элементы стенда №1 HX-8100 SN 080798
 alarm_color = button_color('080798')
@@ -959,13 +964,21 @@ Hovertip(Functional_1ph_2_PC_4, ['Windows 7', 'IP 000.000.000.000'])
 #Элементы стенда №39 Rele_201TLO SN000039
 alarm_color = button_color('000039')
 lbl_Rele_201TLO = LabelFrame(window, text = "39")
-lbl_Rele_201TLO.place(x = 20, y=10, width = 90, heigh = 60)
+lbl_Rele_201TLO.place(x = 20, y=10, width = 150, heigh = 60)
 Rele_201TLO = Button(lbl_Rele_201TLO, text="1", width = 3, command = lambda: installation_card('Rele_201TLO','000039', '39'), bg = alarm_color[0])
 Rele_201TLO.place(x=50, y=0)
 Rele_201TLO_PC = Button(lbl_Rele_201TLO, text="ПК", width = 3, command = lambda: PC_card('PC39','000039', '39'), bg = alarm_color[0])
 Rele_201TLO_PC.place(x=10, y=0)
 Hovertip(Rele_201TLO, ['Rele_201TLO', '000039'])
 Hovertip(Rele_201TLO_PC, ['Windows XP', 'IP 192.168.0.131'])
+
+#Элементы стенда №40 Modem_PLC_201TLO SN000040
+alarm_color = button_color('000040')
+Modem_201TLO = Button(lbl_Rele_201TLO, text="1", width = 3, command = lambda: installation_card('Modem_201TLO','000040', '40'), bg = alarm_color[0])
+Modem_201TLO.place(x=90, y=0)
+Hovertip(Modem_201TLO, ['Modem_201TLO', '000040'])
+
+
 
 window.mainloop()
 

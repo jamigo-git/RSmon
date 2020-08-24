@@ -36,16 +36,13 @@ voltage_57V =('0','039B333')
 voltage_230V =('2','0E60000')
 voltage_270V =('3', '112D999')
 voltage_dict = {1:voltage_57V, 2:voltage_230V, 3:voltage_270V}
-
 phase_ALL = '103'
 phase_A = '113'
 phase_B = '123'
 phase_C = '133'
-
 speeds = ['1200','2400', '4800', '9600', '19200', '38400', '57600', '115200']
 
 
-#Функция записи данных в реестр (последняя отправленная посылка, выбранный COM-порт)
 def winreestr_push(comport):
     software_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software')
     winreg.CreateKey(software_key, 'CL3000')
@@ -53,26 +50,26 @@ def winreestr_push(comport):
     winreg.SetValueEx(rsmon_key, "last_com" , None, winreg.REG_SZ, comport)
     winreg.CloseKey(rsmon_key)
 
-#Функция получения данных из реестра (последняя отправленная посылка, выбранный COM-порт)
+
 def winreestr_pull():
     try:
         rsmon_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\\CL3000')
         comport = winreg.QueryValueEx(rsmon_key, "last_com")
     except Exception:
-        comport = ("COM1", 1)            # при получении из реестра значения ключа получаем похожий кортеж
+        comport = ("COM1", 1)          
     return (comport)
 
-#Функция получения данных из реестра (если стоит программ 3ph-поверка Inkotex)
+
 def winreestr_pull_inkotex():
     try:
         rsmon_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\\Incotex\\3Ph_pm\\Clou_v4.23')
         comport = winreg.QueryValueEx(rsmon_key, "Clou_COM")
     except Exception:
-        comport = ("COM1", 1)            # при получении из реестра значения ключа получаем похожий кортеж
+        comport = ("COM1", 1)            
     combo.set(comport[0])
 
 
-#Функция собирает посылку в зависимости от нажатых клавиш и выбора платы
+
 def Parcel_func():
     phase = str(sel_phase.get())
     voltage = voltage_dict[sel_voltage.get()]
@@ -94,7 +91,7 @@ def get_value():
     print('Значение угла: ', hex(int(spinbox_angle.get()))[2:], type(hex(int(spinbox_angle.get()))))
 
     
-def parcel_crc_function(parcel):                   #Функция вычисляет контрольную сумму посылки и добавляет ее к исходным данным
+def parcel_crc_function(parcel):                   
     xor8 = bytes.fromhex(parcel)
     z = 0
     for i in xor8:
@@ -107,7 +104,7 @@ def parcel_crc_function(parcel):                   #Функция вычисл�
     parcel_crc = k.zfill(2)
     return (parcel_crc)
 
-#Функция находит все свободные COM-порты в системе и добавляет их в список result
+
 def serial_ports(): 
     ports = ['COM%s' % (i + 1) for i in range(256)]
     result = []
@@ -120,10 +117,10 @@ def serial_ports():
             pass
     return result
 
-#Функция проверяет состояние выбранного COM-порта
+
 def com_port_state(ser):
     ser = serial.Serial(combo.get(), combo1.get())
-    if ser.cd == True: # Если на линии обнаружен CD - рисуем зеленый квадрат
+    if ser.cd == True: 
         com_port_state = Canvas(window, width=10, height=10, bg = 'green')
         com_port_state.place(x=400, y=40)
     else:
@@ -131,7 +128,7 @@ def com_port_state(ser):
         com_port_state.place(x=400, y=40)
 
 
-#Функция отправляет посылку установке
+
 def serial_tx(parcel):
     try:
         lbl_error_com = Label(lbl_rx_data_dc, text = "                                                    \n                \n                \n                  \n                \n                 ", foreground = 'red')
@@ -141,24 +138,24 @@ def serial_tx(parcel):
         ser.setDTR(True)
         ser.setRTS(False)
         ser.write(parcel)
-       # serial_rx(ser,parcel)
+   
     except Exception:
         lbl_error_com = Label(lbl_rx_data_dc, text = "Не удалось открыть COM-порт\nПовторите попытку снова\n                \n                \n                  \n                \n                 ", foreground = 'red')
         lbl_error_com.place(x=5, y=5)
 
-#Функция запроса версии (проверка запрос-ответ) счетчика и блока управления
+
 
 
         
-#Функция чтения данных из COM-порта и приведения их в нормальный вид
+
 def serial_rx(ser, parcel_tx):
-    display_data_rx = ser.read(20)      #читаем 20 байт данных с порта
-    parcel_hex = display_data_rx.hex()  #Переводим полученные данные в HEX-формат (убираем /x)
-    parcel_hex = parcel_hex[18:]              #Удаляем отправленную посылку из принятых данных
-    parcel_rx_up = parcel_hex.upper()   #Переводим все буквы в верхний регистр (для удобства)
+    display_data_rx = ser.read(20)      
+    parcel_hex = display_data_rx.hex()  
+    parcel_hex = parcel_hex[18:]              
+    parcel_rx_up = parcel_hex.upper()   
     lbl_parcel_rx = Label(window, text = "                                 ")
     lbl_parcel_rx.place(x=200, y=320)
-    lbl_parcel_rx = Label(window, text = parcel_rx_up) #Выводим в пользовательский интерфейс
+    lbl_parcel_rx = Label(window, text = parcel_rx_up) 
     lbl_parcel_rx.place(x=200, y=320) 
     ser.close()
     rx_dc1 = rx_dc(parcel_rx_up, parcel_tx)
@@ -213,7 +210,7 @@ def serial_rx_ver(ser):
 
 
 
-#Main program
+
     
 window = Tk()  
 window.title("Программа для диагностики устновок CLOU 3F (by Jamigo)")  
@@ -222,13 +219,13 @@ window.geometry('600x500')
 btn_opros = Button(window, text="Из реестра", command = winreestr_pull_inkotex)
 btn_opros.place(x=390, y=35)
 
-reestr = winreestr_pull()       # присваиваем переменной кортеж значений (0-последняя посылка из реестра (кортеж), 1-последний выбраный COM-порт (кортеж))
+reestr = winreestr_pull()       
 
 lbl0 = Label(window, text = "Выберите COM-порт:").place(x=15, y=15)
 combo = Combobox(window, values = serial_ports())
 combo.place(x=15, y=35)
-combo.bind('<<ComboboxSelected>>', com_port_state) #вызываем функцию отображения состояния порта
-combo.set(reestr[0])   # устанавливае при запуске программы значение COM-порта из реестра
+combo.bind('<<ComboboxSelected>>', com_port_state) 
+combo.set(reestr[0])  
 
 lbl01 = Label(window, text = "Выберите скорость:").place(x=200, y=15)
 combo1 = Combobox(window, values = speeds)
@@ -238,17 +235,17 @@ combo1.current(3)
 lbl_current = LabelFrame(window, text = "Установите параметры тока")
 lbl_current.place(x=15, y=70, width = 350, heigh = 60)
 
-spinbox_current = Spinbox(lbl_current, values = current_values, width=5) #модуль для выбора количества посылок
+spinbox_current = Spinbox(lbl_current, values = current_values, width=5) 
 spinbox_current.place(x=5,y=5)
-spinbox_current.delete(00,"end")                            #удаление всех элементов из модуля, для установки значения по умолчанию
-spinbox_current.insert(0,0)                                #установка значения по умолчанию 1
+spinbox_current.delete(00,"end")                            
+spinbox_current.insert(0,0)                                
 lbl_current_A = Label(lbl_current, text="Ток, А")
 lbl_current_A.place(x=90, y=5)
 
-spinbox_angle = Spinbox(lbl_current, from_=0, to=360, width=5) #модуль для выбора количества посылок
+spinbox_angle = Spinbox(lbl_current, from_=0, to=360, width=5) 
 spinbox_angle.place(x=170,y=5)
-spinbox_angle.delete(0,"end")                            #удаление всех элементов из модуля, для установки значения по умолчанию
-spinbox_angle.insert(0,0)                                #установка значения по умолчанию 1
+spinbox_angle.delete(0,"end")                            
+spinbox_angle.insert(0,0)                                
 lbl_angle = Label(lbl_current, text="Угол")
 lbl_angle.place(x=260, y=5)
 

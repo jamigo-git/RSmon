@@ -1,6 +1,7 @@
-import tkinter.ttk as ttk
-from tkinter import *  
-from tkinter.ttk import Combobox, Button, Radiobutton, Label, Entry, Spinbox
+# -*- coding: utf-8 -*-
+import ttk
+from Tkinter import *  
+from ttk import *
 import serial
 import time
 import ast
@@ -108,11 +109,10 @@ def mouse_button3(event): # Функция отрабатывает нажати
     menu.post(event.x_root, event.y_root)
 
 def controller_crc_function(parcel):                   #Функция вычисляет контрольную сумму посылки и добавляет ее к исходным данным
-    print (bytes.fromhex(parcel))
-    sum(bytes.fromhex(parcel)
-    crc256 = hex(sum(bytes.fromhex(parcel)) % 256)[2:] #Вычисляем контрольную сумму по модулю 256, убираем 0x перед шестнадцатеричным числом
-    parcel_crc = bytes.fromhex(parcel + str(crc256))   #Добавляем контрольную сумму к нашей строке и переводим в байты
-    print(crc256)
+    summa_b = sum(bytearray(parcel.decode("hex")))
+    crc256 = hex(summa_b % 256)[2:] #Вычисляем контрольную сумму по модулю 256, убираем 0x перед шестнадцатеричным числом
+    parcel_crc = parcel + str(crc256)
+    parcel_crc = parcel_crc.decode("hex")   #Добавляем контрольную сумму к нашей строке и переводим в байты
     return (parcel_crc)
 
 #Функция находит все свободные COM-порты в системе и добавляет их в список result
@@ -125,13 +125,15 @@ def serial_ports():
             s.close()
             result.append(port)
         except (OSError, serial.SerialException):
+
             pass
     return result
 
 #Функция проверяет состояние выбранного COM-порта
 def com_port_state(ser):
     ser = serial.Serial(combo.get(), combo1.get())
-    if ser.cd == True: # Если на линии обнаружен CD - рисуем зеленый квадрат
+    CD = ser.getCD()
+    if CD == True: # Если на линии обнаружен CD - рисуем зеленый квадрат
         com_port_state = Canvas(window, width=10, height=10, bg = 'green').place(x=400, y=125)
     else:
         com_port_state = Canvas(window, width=10, height=10, bg = 'red').place(x=400, y=125)
@@ -177,39 +179,39 @@ class cycle_tx():
             
 #Функция отправляет заданное количество посылок, берет значения из поля тхт  
 def serial_tx(): 
-    try:
-        ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
-        amount = int(number_of_parcel.get())
-        parcel = str(txt.get())
-        winreestr_push(parcel, combo.get())
-        lbl_parcel_tx = Label(window, text = 00000000000000)
-        lbl_parcel_tx = Label(window, text = txt.get()).place(x=200, y=290)
-        while amount != 0:
-            ser.write(controller_crc_function(txt.get()))
-            amount-=1
-        serial_rx(ser,parcel)
-    except Exception:
-        comport_bad()
+    #try:
+    ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
+    amount = int(number_of_parcel.get())
+    parcel = str(txt.get())
+    winreestr_push(parcel, combo.get())
+    lbl_parcel_tx = Label(window, text = 00000000000000)
+    lbl_parcel_tx = Label(window, text = txt.get()).place(x=200, y=290)
+    while amount != 0:
+        ser.write(controller_crc_function(txt.get()))
+        amount-=1
+    serial_rx(ser, parcel)
+    #except Exception:
+    #    lbl_crc = Label(lbl_rx_data_dc, text = "ACHTUNG!!!  ", foreground = 'Red').place(x=5, y=5)
 
 #Функция отправляет заранее определенный код используется для заранее обозначенных клавиш
 def serial_tx_code(parcel_full): 
-    try:
-        ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
-        amount = int(number_of_parcel.get())
-        lbl_parcel_tx = Label(window, text = 00000000000000)
-        lbl_parcel_tx = Label(window, text = parcel_full).place(x=200, y=290)
-        while amount != 0:
-            ser.write(controller_crc_function(parcel_full))
-            amount-=1
-        serial_rx(ser,parcel_full)
-    except Exception:
-        comport_bad()
+    #try:
+    ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
+    amount = int(number_of_parcel.get())
+    lbl_parcel_tx = Label(window, text = 00000000000000)
+    lbl_parcel_tx = Label(window, text = parcel_full).place(x=200, y=290)
+    while amount != 0:
+        ser.write(controller_crc_function(parcel_full))
+        amount-=1
+    serial_rx(ser,parcel_full)
+    #except Exception:
+    #    lbl_crc = Label(lbl_rx_data_dc, text = "ACHTUNG!!!  ", foreground = 'Red').place(x=5, y=5)
     
         
 #Функция чтения данных из COM-порта и приведения их в нормальный вид
 def serial_rx(ser, parcel_tx):
     display_data_rx = ser.read(20)      #читаем 20 байт данных с порта
-    parcel_hex = display_data_rx.hex()  #Переводим полученные данные в HEX-формат (убираем /x)
+    parcel_hex = display_data_rx.encode("hex")  #Переводим полученные данные в HEX-формат (убираем /x)
     parcel_hex = parcel_hex[18:]              #Удаляем отправленную посылку из принятых данных
     parcel_rx_up = parcel_hex.upper()   #Переводим все буквы в верхний регистр (для удобства)
     lbl_parcel_rx = Label(window, text = "                                 ")
@@ -381,7 +383,8 @@ class rx_dc():
 
     def crc_plata(self, parcel_rx_up): #функция вычисляет CRC принятой посылки и выводит значение проверки
         crc256_rx = parcel_rx_up[12:14]
-        crc256_chk = hex(sum(bytes.fromhex(parcel_rx_up[0:12])) % 256)[2:] #Вычисляем контрольную сумму по модулю 256, убираем 0x перед шестнадцатеричным числом
+        crc256_rx_chk = parcel_rx_up[0:12]
+        crc256_chk = hex(sum(bytearray(crc256_rx_chk.decode("hex"))) % 256)[2:] #Вычисляем контрольную сумму по модулю 256, убираем 0x перед шестнадцатеричным числом
         if crc256_rx == crc256_chk.upper():
             lbl_crc = Label(lbl_rx_data_dc, text = "CRC: ОК   ", foreground = 'Green').place(x=5, y=5)
         else:
@@ -435,10 +438,10 @@ number_of_parcel.delete(0,"end")                            #удаление в
 number_of_parcel.insert(0,1)                                #установка значения по умолчанию 1
 lbl_number_of_parcel = Label(window, text="Кол-во повторов").place(x=100, y=180)
 
-number_of_plate = Spinbox(window, from_=0, to=256, width=5) #модуль для выбора количества посылок
+number_of_plate = Spinbox(window, from_=0, to=256, width=5) #модуль для выбора платы
 number_of_plate.place(x=220,y=180)
 number_of_plate.delete(00,"end")                            #удаление всех элементов из модуля, для установки значения по умолчанию
-number_of_plate.insert(0,00)                                #установка значения по умолчанию 1
+number_of_plate.insert(0,00)                                #установка значения по умолчанию 0
 lbl_number_of_plate = Label(window, text="Номер платы").place(x=310, y=180)
 
 reestr_parcel = winreestr_pull()[0] # забираем из кортежа (при получении из реестра (parcel, 1)) значение parcel

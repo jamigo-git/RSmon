@@ -392,19 +392,22 @@ def button_color(SN, name_pc):
 #Main program
 window = Tk()  
 window.title("Виртуальный цех        (by Jamigo)")  
-window.geometry('1250x780')
+window.geometry('1400x800')
 #Включаем подержку нажатий клавиш Ctr-C, Ctr-V, Ctr-X
 window.bind_all("<Key>", _onKeyRelease, "+") 
 
 #Дополнительные кнопки 
 commentas = Button(window, text="Все комменты", width = 13, command = lambda: comments('080798', 'ALL'))
-commentas.place(x=1100, y=20)
+commentas.place(x=1270, y=20)
 scheme_office_1 = Button(window, text="Схема стек.", width = 13, command = lambda: subprocess.Popen("C:\\Program Files\\OpenOffice 4\\program\\sdraw.exe D:\\myprogram\\bin\\journal\\scheme1.odg"))
-scheme_office_1.place(x=1100, y=50)
+scheme_office_1.place(x=1270, y=50)
 scheme_office_2 = Button(window, text="Схема A2", width = 13, command = lambda: subprocess.Popen("C:\\Program Files\\OpenOffice 4\\program\\sdraw.exe D:\\myprogram\\bin\\journal\\scheme2.odg"))
-scheme_office_2.place(x=1100, y=80)
+scheme_office_2.place(x=1270, y=80)
 history = Button(window, text="Изменения ПО", width = 13, command = lambda: subprocess.Popen("C:\\Windows\\notepad.exe D:\\myprogram\\bin\\journal\\history.txt"))
-history.place(x=1100, y=110)
+history.place(x=1270, y=110)
+
+#Элементы для лучшей визуализации
+Right_wall = Canvas(window, width=10, height=1000, bg = 'green').place(x=1230, y=5)
 
 #Элементы стенда №1 HX-8100 SN 080798
 alarm_color = button_color('080798', 'PC1')
@@ -570,9 +573,9 @@ Hovertip(HX8300_11_PC, ['Windows XP', 'IP нет данных'])
 #Элементы стенда №12 CL3005-24 SN3028
 alarm_color = button_color('3028', 'PC12')
 lbl_CL3005_1 = LabelFrame(window, text = "12 CL_3ф")
+lbl_CL3005_1.place(x = 420, y=100, width = 250, heigh = 90)
 poverka_CL3005_1 = Label(lbl_CL3005_1, text = ("Поверка: " + str(alarm_color[1])) , fg = alarm_color[2])
 poverka_CL3005_1.place(x=10, y=10)
-lbl_CL3005_1.place(x = 450, y=100, width = 250, heigh = 90)
 CL3005_1_1 = Button(lbl_CL3005_1, text="1-12", width = 10, command = lambda: installation_card('CL3005-24','3028', '12'), bg = alarm_color[0])
 CL3005_1_1.place(x=10, y=30)
 CL3005_1_2 = Button(lbl_CL3005_1, text="13-24", width = 10, command = lambda: installation_card('CL3005-24','3028', '12'), bg = alarm_color[0])
@@ -589,7 +592,7 @@ Hovertip(CL3005_1_PC, ['Windows 7', 'IP 192.168.0.185'])
 #Элементы стенда №13 CL3005-24 SN3042
 alarm_color = button_color('3042', 'PC13')
 lbl_CL3005_2 = LabelFrame(window, text = "13 CL_3ф")
-lbl_CL3005_2.place(x = 700, y=100, width = 250, heigh = 90)
+lbl_CL3005_2.place(x = 670, y=100, width = 250, heigh = 90)
 poverka_CL3005_2 = Label(lbl_CL3005_2, text = ("Поверка: " + str(alarm_color[1])) , fg = alarm_color[2])
 poverka_CL3005_2.place(x=10, y=10)
 CL3005_2_1 = Button(lbl_CL3005_2, text="1-12", width = 10, command = lambda: installation_card('CL3005-24','3042', '13'), bg = alarm_color[0])
@@ -964,7 +967,7 @@ Functional_1ph_PC_3 = Button(lbl_Functional_1ph_1, text="ПК", width = 3, comma
 Functional_1ph_PC_3.place(x=50, y=0)
 Functional_1ph_1.place(x=10, y=0)
 Hovertip(Functional_1ph_1, ['Functional_1ph', '061101401'])
-Hovertip(Functional_1ph_PC_3, ['Windows 7', 'IP 000.000.000.000'])
+Hovertip(Functional_1ph_PC_3, ['Windows 7', 'IP 0.0.0.0'])
 
 #Элементы стенда №37 Functional_1ph SN000037
 alarm_color = button_color('000037', 'PC37')
@@ -976,6 +979,18 @@ Functional_1ph_2_PC_4 = Button(lbl_Functional_1ph_2, text="ПК", width = 3, com
 Functional_1ph_2_PC_4.place(x=50, y=00)
 Hovertip(Functional_1ph_2, ['Functional_1ph', '000037'])
 Hovertip(Functional_1ph_2_PC_4, ['Windows 7', 'IP 000.000.000.000'])
+
+#Элементы стенда №38 Functional_1ph SN000038
+alarm_color = button_color('000038', 'PC38')
+lbl_Functional_1ph_1 = LabelFrame(window, text = "38")
+lbl_Functional_1ph_1.place(x = 1130, y=730, width = 90, heigh = 60)
+Functional_1ph_1 = Button(lbl_Functional_1ph_1, text="1", width = 3, command = lambda: installation_card('Functional_1ph','000038', '38'), bg = alarm_color[0])
+Functional_1ph_PC_3 = Button(lbl_Functional_1ph_1, text="ПК", width = 3, command = lambda: PC_card('PC38','000038', '38'), bg = alarm_color[3])
+Functional_1ph_PC_3.place(x=5, y=0)
+Functional_1ph_1.place(x=45, y=0)
+Hovertip(Functional_1ph_1, ['Functional_1ph', '000038'])
+Hovertip(Functional_1ph_PC_3, ['Windows XP', 'IP 192.168.0.243'])
+
 
 #Элементы стенда №39 Rele_201TLO SN000039
 alarm_color = button_color('000039', 'PC39')
@@ -1009,6 +1024,22 @@ CL1000_PC.place(x=5, y=75)
 Hovertip(CL1000_1, ['CL1000', '1017'])
 Hovertip(CL1000_ST, ['CL1000', '1017'])
 Hovertip(CL1000_PC, ['Windows 7', 'IP 192.168.0.207'])
+
+#Элементы стенда №90 CL3005-24 SN3036
+alarm_color = button_color('3027', 'PC90')
+lbl_CL3005_9 = LabelFrame(window, text = "90 Ремонт_группа")
+lbl_CL3005_9.place(x = 1250, y=700, width = 150, heigh = 90)
+poverka_CL3005_9 = Label(lbl_CL3005_9, text = ("Поверка: " + str(alarm_color[1])) , fg = alarm_color[2])
+poverka_CL3005_9.place(x=0, y=10)
+CL3005_9_1 = Button(lbl_CL3005_9, text="1-12", width = 10, command = lambda: installation_card('CL3005-24','3027', '90'), bg = alarm_color[0])
+CL3005_9_1.place(x=5, y=30)
+CL3005_9_ST = Button(lbl_CL3005_9, text="Уст.", width = 3, command = lambda: installation_card('CL3005-24','3027', '90'), bg = alarm_color[0])
+CL3005_9_ST.place(x=110, y=30)
+CL3005_9_PC = Button(lbl_CL3005_9, text="ПК", width = 3, command = lambda: PC_card('PC90','3027', '90'), bg = alarm_color[3])
+CL3005_9_PC.place(x=110, y=0)
+Hovertip(CL3005_9_1, ['CL3005-24', ' SN3027'])
+Hovertip(CL3005_9_ST, ['CL3005-24', ' SN3036'])
+Hovertip(CL3005_9_PC, ['Windows 2000', 'IP 0.0.0.0'])
 
 window.mainloop()
 

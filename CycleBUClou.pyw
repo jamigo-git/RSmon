@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import time
 import serial
 
@@ -25,8 +26,9 @@ def serial_tx(parcel):
             serial_rx(ser, 1)                   
             ser.close()
         elif parcel == 2:
-            ser.setDTR(True)
             ser.setRTS(False) 
+            ser.setDTR(True)
+            
             parcel_send = '812000065670'
             parcel_full = bytes.fromhex(parcel_send)
             ser.write(parcel_full)

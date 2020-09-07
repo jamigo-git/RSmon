@@ -664,7 +664,7 @@ SY8125_4.place(x=50, y=0)
 SY8125_4_PC = Button(lbl_SY8125_4, text="ПК", width = 3, command = lambda: PC_card('PC17', '703152', '17'), bg = alarm_color[3])
 SY8125_4_PC.place(x=10, y=0)
 Hovertip(SY8125_4, ['SY8125', ' SN703152'])
-Hovertip(SY8125_4_PC, ['Windows XP', 'IP 192.168.0.197'])
+Hovertip(SY8125_4_PC, ['Windows XP', 'IP 192.168.0.12'])
 
 #Элементы стенда №18 SY8125 SN703153
 alarm_color = button_color('703153', 'PC18')
@@ -674,7 +674,7 @@ poverka_SY8125_5 = Label(lbl_SY8125_5, text = ("Поверка: " + str(alarm_co
 poverka_SY8125_5.place(x=50, y=10)
 SY8125_5 = Button(lbl_SY8125_5, text="1-24", width = 10, command = lambda: installation_card('SY8125', '703153', '18'), bg = alarm_color[0])
 SY8125_5.place(x=50, y=30)
-SY8125_5_PC = Button(lbl_SY8125_5, text="ПК", width = 3, command = lambda: PC_card('PC18', '192.168.0.113', '703153', '18'), bg = alarm_color[3])
+SY8125_5_PC = Button(lbl_SY8125_5, text="ПК", width = 3, command = lambda: PC_card('PC18', '703153', '18'), bg = alarm_color[3])
 SY8125_5_PC.place(x=10, y=30)
 Hovertip(SY8125_5, ['SY8125', ' SN703153'])
 Hovertip(SY8125_5_PC, ['Windows XP', 'IP 192.168.0.113'])

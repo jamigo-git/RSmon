@@ -405,6 +405,8 @@ scheme_office_2 = Button(window, text="Схема A2", width = 13, command = lam
 scheme_office_2.place(x=1270, y=80)
 history = Button(window, text="Изменения ПО", width = 13, command = lambda: subprocess.Popen("C:\\Windows\\notepad.exe D:\\myprogram\\bin\\journal\\history.txt"))
 history.place(x=1270, y=110)
+programs = Button(window, text="Программы", width = 13, command = lambda: subprocess.Popen("C:\\Windows\\explorer.exe D:\\MyProgram\\BIN\\dist"))
+programs.place(x=1270, y=140)
 
 #Элементы для лучшей визуализации
 Right_wall = Canvas(window, width=10, height=1000, bg = 'green').place(x=1230, y=5)
@@ -1024,6 +1026,27 @@ CL1000_PC.place(x=5, y=75)
 Hovertip(CL1000_1, ['CL1000', '1017'])
 Hovertip(CL1000_ST, ['CL1000', '1017'])
 Hovertip(CL1000_PC, ['Windows 7', 'IP 192.168.0.207'])
+
+#Элементы стенда №49 SY8126 SN0808169
+alarm_color = button_color('0808169', 'PC49')
+lbl_SY8126_3 = LabelFrame(window, text = "49 SY_3ф")
+lbl_SY8126_3.place(x = 1270, y=280, width = 100, heigh = 270)
+poverka_SY8126_3 = Label(lbl_SY8126_3, text = ("Поверка: \n" + str(alarm_color[1])) , fg = alarm_color[2])
+poverka_SY8126_3.place(x=10, y=170)
+progon_SY8126_3 = Label(lbl_SY8126_3, text = ("Стенд рядом\n с прогоном" ))
+progon_SY8126_3.place(x=0, y=210)
+SY8126_3_1 = Button(lbl_SY8126_3, text="1 \n-12", width = 3, height = 3, command = lambda: installation_card('SY8126','0808169', '49'), bg = alarm_color[0])
+SY8126_3_1.place(x=10, y=70)
+SY8126_3_2 = Button(lbl_SY8126_3, text="13 \n-24", width = 3, height = 3, command = lambda: installation_card('SY8126','0808169', '49'), bg = alarm_color[0])
+SY8126_3_2.place(x=10, y=5)
+SY8126_3_ST = Button(lbl_SY8126_3, text="Уст.", width = 3, command = lambda: installation_card('SY8126','0808169', '49'), bg = alarm_color[0])
+SY8126_3_ST.place(x=10, y=135)
+SY8126_3_PC = Button(lbl_SY8126_3, text="ПК", width = 3, command = lambda: PC_card('PC49','0808169', '49'), bg = alarm_color[3])
+SY8126_3_PC.place(x=45, y=135)
+Hovertip(SY8126_3_1, ['SY8126', ' SN0808169'])
+Hovertip(SY8126_3_2, ['SY8126', ' SN0808169'])
+Hovertip(SY8126_3_ST, ['SY8126', ' SN0808169'])
+Hovertip(SY8126_3_PC, ['Windows XP', 'IP 192.168.0.11'])
 
 #Элементы стенда №90 CL3005-24 SN3036
 alarm_color = button_color('3027', 'PC90')

@@ -4,7 +4,6 @@ import time
 import _winreg
 import Tkinter
 import ttk
-import struct
 from Tkinter import *
 from ttk import *
 import CRC16_MODBUS
@@ -19,19 +18,19 @@ header = 'F9F9F9F9F9'
 start_st_parcel = 'B11000020010201388'
 first_st_parcel = '0000000000'
 second_st_parcel= '0000000000000000'
-end_st_parcel = '000000002EE05DC00000'
-current_values = ('0', '0.25', '0.5', '1', '2.5', '5', '10', '25', '60')
-current_0A =   ('9', '000000')
-current_025A = ('8', '0009C4')
-current_05A =  ('7', '001388')
-current_1A =   ('6', '002710')
-current_2_5A = ('5', '0061A8')
-current_5A =   ('4', '00C350')
-current_10A =  ('3', '0186A0')
-current_25A =  ('2', '03D090')
-current_60A =  ('1', '0927C0')
+end_st_parcel = '2EE05DC00000'
+current_values = ('0', '0.25', '0.5', '2.5', '5', '10', '25', '60')
+current_0A =   ('9', '00000000')
+current_025A = ('8', '000009C4')
+current_05A =  ('7', '00001388')
+#current_1A =   ('6', '00002710')
+current_2_5A = ('5', '000061A8')
+current_5A =   ('4', '0000C350')
+current_10A =  ('3', '000186A0')
+current_25A =  ('2', '0003D090')
+current_60A =  ('1', '000927C0')
 
-current_dict = {'0':current_0A, '0.25':current_025A, '0.5':current_05A, '1':current_1A, '2.5':current_2_5A, '5':current_5A, '10':current_10A, '25':current_25A, '60':current_60A}
+current_dict = {'0':current_0A, '0.25':current_025A, '0.5':current_05A, '2.5':current_2_5A, '5':current_5A, '10':current_10A, '25':current_25A, '60':current_60A}
 
 voltage_0V = ('0000')
 voltage_57V =('1644')
@@ -43,15 +42,15 @@ voltage_dict = {1:voltage_57V, 2:voltage_230V, 3:voltage_270V}
 #write data in window_installations registry
 def winreestr_push(comport):
     software_key = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, 'Software')
-    _winreg.CreateKey(software_key, 'SY1ph')
-    rsmon_key = _winreg.OpenKey(software_key, 'SY1ph', 0, _winreg.KEY_ALL_ACCESS)
+    _winreg.CreateKey(software_key, 'SY3ph')
+    rsmon_key = _winreg.OpenKey(software_key, 'SY3ph', 0, _winreg.KEY_ALL_ACCESS)
     _winreg.SetValueEx(rsmon_key, "last_com" , None, _winreg.REG_SZ, comport)
     _winreg.CloseKey(rsmon_key)
 
 #read data data from window_installations registry
 def winreestr_pull():
     try:
-        rsmon_key = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, 'Software\\SY1ph')
+        rsmon_key = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, 'Software\\SY3ph')
         comport = _winreg.QueryValueEx(rsmon_key, "last_com")
     except Exception:
         print ('Com-port from window_installations registry unavailable, will use COM1 as default!!!')
@@ -62,9 +61,9 @@ def winreestr_pull():
 #read data from window_installations registry Inkotex 3ph
 def winreestr_pull_inkotex():
     try:
-        rsmon_key = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, 'Software\\Incotex\\1Ph_pm\\Songyang')
+        rsmon_key = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, 'Software\\Incotex\\3Ph_pm\\Songyang')
         comport = _winreg.QueryValueEx(rsmon_key, "Songyang_Com")
-        rsmon_key = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, 'Software\\Incotex\\1Ph_pm')
+        rsmon_key = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, 'Software\\Incotex\\3Ph_pm')
         comport_commutation = _winreg.QueryValueEx(rsmon_key, "ConnDev_COM")
         comport_PM = _winreg.QueryValueEx(rsmon_key, "PM_COM")
         comport_IRda = _winreg.QueryValueEx(rsmon_key, "IrDA_COM")
@@ -83,7 +82,15 @@ def Parcel_func():
     current = current_dict[spinbox_current.get()]
     angle = str(hex(int(spinbox_angle.get())*100))[2:]
     angle = angle.zfill(4)
-    parcel = start_st_parcel + voltage + first_st_parcel + current[1] + second_st_parcel + angle.upper() + end_st_parcel
+    if sel_phase.get() == 4:
+        parcel = start_st_parcel + voltage*3 + current[1]*3 + angle.upper()*3 + end_st_parcel
+    elif sel_phase.get() == 1:
+        parcel = start_st_parcel + voltage*3 + current[1] + '00000000'+ '00000000' + angle.upper() + '00000000' + end_st_parcel
+    elif sel_phase.get() == 2:
+        parcel = start_st_parcel + voltage*3 + '00000000' + current[1] + '00000000' + '0000' + angle.upper() + '0000' + end_st_parcel
+    elif sel_phase.get() == 3:
+        parcel = start_st_parcel + voltage*3 + '0000000000000000' + current[1] + '00000000' + angle.upper() + end_st_parcel
+    
     parcel_crc = mainfunction(parcel)
     parcel_full = (header + parcel + parcel_crc.zfill(4))
     parcel1 = '4942303' + current[0] + '0D'
@@ -117,17 +124,23 @@ def com_port_state(ser):
 #Function send parcel in RS232
 def serial_tx(parcel):
     try:
+        parcel_start = 'F9F9F9F9F9B110005A00010200009F6D'
+        parcel_start_2 = 'F9F9F9F9F9B110005A00010200015EAD'
         parcel0 = '4D53300D'
         lbl_error_com = Label(lbl_rx_data_dc, text = "                                                    \n                \n                \n                  \n                \n                 ", foreground = 'red')
         lbl_error_com.place(x=5, y=5)
-        ser = serial.Serial(combo.get(), combo1.get(), timeout = 0.1)
+        ser = serial.Serial(combo.get(), combo1.get(), timeout = 1)
         winreestr_push(combo.get())
         ser.setDTR(True)
         ser.setRTS(False)
+        ser.write(parcel_start.decode("hex"))
+        time.sleep(0.5)
         ser.write(parcel0.decode("hex"))
-        time.sleep(1)
+        time.sleep(0.5)
         ser.write(parcel[1])
-        time.sleep(1)
+        time.sleep(0.5)
+        ser.write(parcel_start_2.decode("hex"))
+        time.sleep(0.5)
         ser.write(parcel[0])
         ser.close()
       
@@ -136,7 +149,7 @@ def serial_tx(parcel):
         lbl_error_com.place(x=5, y=5)
 
 window_installation = Tk()  
-window_installation.title("Program for diagnostic SongYang 1 phase (by Jamigo)")  
+window_installation.title("Program for diagnostic SongYang 3 phases (by Jamigo)")  
 window_installation.geometry('600x600')
 
 btn_opros = Button(window_installation, text="Из реестра", command = winreestr_pull_inkotex)
@@ -172,6 +185,21 @@ spinbox_angle.insert(0,0)                                #установка з�
 lbl_angle = Label(lbl_current, text="Угол")
 lbl_angle.place(x=260, y=5)
 
+
+lbl_phase = LabelFrame(window_installation, text = "Выберите задействованные фазы")
+lbl_phase.place(x=15, y=135, width = 350, heigh = 60)
+
+sel_phase = IntVar()
+sel_phase.set(4)
+rad_A = Radiobutton(lbl_phase, text='A', value=1, variable=sel_phase)
+rad_A.place(x=5,y=5)
+rad_B = Radiobutton(lbl_phase, text='B', value=2, variable=sel_phase)
+rad_B.place(x=45,y=5)
+rad_C = Radiobutton(lbl_phase, text='C', value=3, variable=sel_phase)
+rad_C.place(x=85,y=5)
+rad_ABC = Radiobutton(lbl_phase, text='ABC', value=4, variable=sel_phase)
+rad_ABC.place(x=125,y=5)
+
 lbl_voltage = LabelFrame(window_installation, text = "Установите параметры напряжения")
 lbl_voltage.place(x=15, y=200, width = 350, heigh = 60)
 
@@ -181,8 +209,8 @@ rad_voltage_57V = Radiobutton(lbl_voltage, text='57В', value=1, variable=sel_vo
 rad_voltage_57V.place(x=5,y=5)
 rad_voltage_220V = Radiobutton(lbl_voltage, text='220В', value=2, variable=sel_voltage)
 rad_voltage_220V.place(x=65,y=5)
-rad_voltage_270V = Radiobutton(lbl_voltage, text='270В', value=3, variable=sel_voltage)
-rad_voltage_270V.place(x=125,y=5)
+#rad_voltage_270V = Radiobutton(lbl_voltage, text='270В', value=3, variable=sel_voltage)
+#rad_voltage_270V.place(x=125,y=5)
 
 btn_send = Button(window_installation, text="Запустить", command = lambda: serial_tx(Parcel_func()))
 btn_send.place(x=15, y=290)
@@ -192,7 +220,7 @@ btn_stop.place(x=250, y=290)
 lbl_version = LabelFrame(window_installation, text = "Версия ПО установки")
 lbl_version.place(x = 420, y=310, width = 155, heigh = 150)
 
-lbl_rx_data_dc = LabelFrame(window_installation, text = "Принятые со счетчика (CL311v2) данные")
+lbl_rx_data_dc = LabelFrame(window_installation, text = "Принятые со счетчика (SY3320) данные")
 lbl_rx_data_dc.place(x=15, y=320, width = 350, heigh = 240)
 
 window_installation.mainloop()

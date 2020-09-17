@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['clou-test-operator.py'],
+a = Analysis(['Clou_3ph_Shunt.pyw'],
              pathex=['D:\\MyProgram\\BIN'],
              binaries=[],
              datas=[],
@@ -19,15 +19,19 @@ pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,
           a.scripts,
-          a.binaries,
-          a.zipfiles,
-          a.datas,
           [],
-          name='clou-test-operator',
+          exclude_binaries=True,
+          name='Clou_3ph_Shunt',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          upx_exclude=[],
-          runtime_tmpdir=None,
           console=False )
+coll = COLLECT(exe,
+               a.binaries,
+               a.zipfiles,
+               a.datas,
+               strip=False,
+               upx=True,
+               upx_exclude=[],
+               name='Clou_3ph_Shunt')

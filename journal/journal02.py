@@ -11,22 +11,12 @@ import psycopg2
 from idlelib.tooltip import Hovertip
 import subprocess
 import configparser
-import ipaddress
 
 config = configparser.ConfigParser()
 config.read("config.ini")
 
 surnames = config['people']['engineers']
 surnames = [element.strip("'[]") for element in surnames.split(", ")]
-
-#BD_database= config['data_base']['database']
-#BD_user= config['data_base']['user']
-#BD_password= config['data_base']['password']
-#BD_host= config['data_base']['host']
-#BD_port= config['data_base']['port']
-#connectionBD = "dbname=\"%s\", user=\"%s\", password=\"%s\", host=\"%s\", port=\"%s\"" % (BD_database, BD_user, BD_password, BD_host, BD_port)
-#con = psycopg2.connect(connectionBD)
-#con.close()
 
 #Работа с буфером по клавишам Ctr-C, Ctr-V, Ctr-X
 def _onKeyRelease(event):   
@@ -38,18 +28,23 @@ def _onKeyRelease(event):
     if event.keycode==67 and ctrl and event.keysym.lower() != "c":
         event.widget.event_generate("<<Copy>>")
 
-def connect_DB():
-    con = psycopg2.connect(dbname="Virtual_department", user="user", password="showmustgoon", host="192.168.0.150", port="5432")
-    return (con)
+def connect_database():
+    #try:
+    # Подключение к БД
+    con = psycopg2.connect(
+        database=config['data_base']['database'], 
+        user=config['data_base']['user'], 
+        password=config['data_base']['password'], 
+        host=config['data_base']['host'], 
+        port=config['data_base']['port'])
+    print("Подключение к базе данных: ОК")
+    #except:
+    #    print("Не удалось подключиться к базе данных")
+
 
 # Функция работы с комментариями по стендам
 def comments(model, SN):
-    try:
-        con = connect_DB()
-        print("Подключение к базе данных: ОК")
-    except:
-        print("Не удалось подключиться к базе данных")
-    
+    connect_database()
     # Считывание комментариев по заданному SN
     try:
         cur = con.cursor()
@@ -71,7 +66,7 @@ def comments(model, SN):
             con.close()
     except:
         print("Данные в таблице комментариев отсутствуют")
-    subprocess.Popen("C:\\Windows\\notepad.exe comments.txt")
+    subprocess.Popen("C:\\Windows\\notepad.exe D:\\myprogram\\bin\\journal\\comments.txt")
 
 # Фукнция открытия карточки компьютера
 def PC_card(model, SN, number_in_departament):
@@ -92,8 +87,8 @@ def PC_card(model, SN, number_in_departament):
     IP_new = Text(window_card, width=13, height=1)
     IP_new.place(x=480, y=215)
     IP_new.insert(1.0, '192.168.0.0')
-    IP_new_wr = Button(window_card, text="Записать", command = lambda: SUBD_push_one(window_card, IP_new, SN, model, "pc"))
-    IP_new_wr.place(x=490, y=240)
+    poverka_wr = Button(window_card, text="Записать", command = lambda: SUBD_push_one(window_card, IP_new, SN, model, pc))
+    poverka_wr.place(x=490, y=240)
     btn_wr = Button(window_card, text="Отправить", command = lambda: SUBD_push(window_card, text_wr, model, combo, sel.get(), text_card, number_in_departament))
     btn_wr.place(x=350, y=420)
     lbl01 = Label(window_card, text = "Выберите фамилию:").place(x=10, y=420)
@@ -113,16 +108,7 @@ def PC_card(model, SN, number_in_departament):
 
 #Функция получения данных о компьютере из БД
 def SUBD_get_PC(model, window_card, text_card, SN):
-    try:
-        # Подключение к БД
-        con = connect_DB()
-        label_dbsuc = Label(window_card, text = "Подключение к базе данных: ОК", foreground = 'green')
-        label_dbsuc.place(x=10, y=5)
-    except:
-        print("Ошибка в функции считывания данных о ПК первый модуль try|except")
-        label_dbsuc = Label(window_card, text = "Не удалось подключиться к базе денных", foreground = 'red')
-        label_dbsuc.place(x=10, y=5)
-
+    connect_database()
     try:
     # Считывание данных ПК из таблицы pc
         cur = con.cursor()
@@ -153,7 +139,6 @@ def SUBD_get_PC(model, window_card, text_card, SN):
             btn_ping = Button(window_card, text="Ping", command = lambda: subprocess.Popen('C:\\windows\\system32\\ping.exe %s '%ip_ad))
             btn_ping.place(x=490, y=145)
     except:
-        print("Ошибка в функции считывания данных о ПК второй модуль try|except")
         Label(window_card, text = "Данные в таблице установок отсутсвуют!!!", foreground = 'red').place(x=10, y=25)
 
     try:
@@ -168,9 +153,7 @@ def SUBD_get_PC(model, window_card, text_card, SN):
             text_card.insert(1.0, "\n")
         con.close()
     except:
-        print("Ошибка в функции считывания данных о ПК третий модуль try|except")
         text_card.insert(1.0, "Данные в таблице комментариев отсутствуют")
-
 
 # Функция открытия карточки стенда
 def installation_card(model, SN, number_in_departament):
@@ -181,6 +164,7 @@ def installation_card(model, SN, number_in_departament):
     Label(window_card, text = ("Последние комментарии:")).place(x=10, y=90)
     text_card = Text(window_card, width=50, height=10)
     text_card.place(x=10, y=110)
+    print('Im here')
     SUBD_get(window_card, text_card, SN)
     Label(window_card, text = ("Ваш комментарий:")).place(x=10, y=300)
     text_wr = Text(window_card, width=50, height=5)
@@ -189,7 +173,7 @@ def installation_card(model, SN, number_in_departament):
     poverka_text = Text(window_card, width=10, height=1)
     poverka_text.place(x=480, y=215)
     poverka_text.insert(1.0, 'ГГГГ-ММ-ДД')
-    poverka_wr = Button(window_card, text="Записать", command = lambda: SUBD_push_one(window_card, poverka_text, SN, number_in_departament, "installations"))
+    poverka_wr = Button(window_card, text="Записать", command = lambda: SUBD_push_one(window_card, poverka_text, SN, number_in_departament, installations))
     poverka_wr.place(x=490, y=240)
     btn_wr = Button(window_card, text="Отправить", command = lambda: SUBD_push(window_card, text_wr, SN, combo, sel.get(), text_card, number_in_departament))
     btn_wr.place(x=350, y=420)
@@ -211,13 +195,7 @@ def installation_card(model, SN, number_in_departament):
 
 # Функция записи комментариев в БД (установки)
 def SUBD_push(window_card, text_wr, SN, combo, alarms, text_card, number_in_departament):
-    try:
-        # Подключение к БД
-        con = connect_DB()
-        Label(window_card, text = "Подключение к базе данных: ОК            ", foreground = 'green').place(x=10, y=450)
-    except:
-        print("Ошибка в функции записи комментариев в БД по установке, невозможно подключиться к базе данных")
-        Label(window_card, text = "Подключение к базе данных отсутсвует", foreground = 'red').place(x=10, y=450)
+    connect_database()
     try:
         #Запись комментария в таблицу БД
         if alarms == 1:
@@ -227,6 +205,7 @@ def SUBD_push(window_card, text_wr, SN, combo, alarms, text_card, number_in_depa
         else:
             alarms = 'is_problems'
         cur = con.cursor()
+      
         date = datetime.datetime.now().strftime("%d-%m-%Y")
         time = datetime.datetime.now().strftime("%H:%M:%S")    
         author = combo.get()
@@ -250,20 +229,13 @@ def SUBD_push(window_card, text_wr, SN, combo, alarms, text_card, number_in_depa
             text_card.insert(1.0, "\n")
         con.close()
     except:
-        print("Ошибка в функции записи комментариев в БД по установке")
         Label(window_card, text = "Не удалось записать данные в базу данных!!!", foreground = 'red').place(x=10, y=450)
     
 # Функция записи даты поверки (и других одиночных полей)
 def SUBD_push_one(window_card, data_bd, SN, number_in_departament, table):
+    connect_database()
     try:
-        # Подключение к БД
-        con = connect_DB()
-        Label(window_card, text = "Подключение к базе данных: ОК            ", foreground = 'green').place(x=10, y=450)
-    except:
-        print("Ошибка в функции записи даты поверки первый модуль")
-        Label(window_card, text = "Подключение к базе данных отсутствует", foreground = 'red').place(x=10, y=450)
-    
-    if table == "installations": #Запись даты поверки
+        #Запись комментария в таблицу БД
         date_usr =  data_bd.get(1.0, END).strip()
         if date_usr == "ГГГГ-ММ-ДД":
             Label(window_card, text = "Введите дату", foreground = 'red').place(x=480, y=270)
@@ -277,38 +249,16 @@ def SUBD_push_one(window_card, data_bd, SN, number_in_departament, table):
                 con.close()
                 Label(window_card, text = "Дата записана", foreground = 'green').place(x=480, y=270)
             except:
-                print("Ошибка в функции записи даты поверки не верный формат даты")
                 Label(window_card, text = "Не формат!", foreground = 'red').place(x=480, y=270)
-    elif table == "pc":
-        new_IP =  data_bd.get(1.0, END).strip()
-        if new_IP == "192.168.0.0":
-            Label(window_card, text = "Введите IP-адрес", foreground = 'red').place(x=480, y=270)
-        else:
-            try:
-                ipaddress.ip_address(new_IP)
-                Label(window_card, text = "Формат ок", foreground = 'green').place(x=480, y=270)
-                cur = con.cursor()
-                cur.execute("UPDATE public.pc SET ip=%s WHERE serial_number = %s; ", (new_IP, SN))
-                con.commit() 
-                con.close()
-                Label(window_card, text = "Новый IP записан", foreground = 'green').place(x=480, y=270)
-            except:
-                print("Ошибка в функции записи IP не верный формат IP")
-                Label(window_card, text = "Не формат!", foreground = 'red').place(x=480, y=270)
-    else:
+        
+    except:
         Label(window_card, text = "Не удалось записать данные в базу данных!!!", foreground = 'red').place(x=10, y=450)
-        print("Ошибка в функции записи даты поверки второй модуль")
+        
        
 # Функция получения данных из базы по установке
 def SUBD_get(window_card, text_card, SN):
-    try:
-        # Подключение к БД
-        con = connect_DB()
-        label_dbsuc = Label(window_card, text = "Подключение к базе данных: ОК", foreground = 'green')
-        label_dbsuc.place(x=10, y=5)
-    except:
-        label_dbsuc = Label(window_card, text = "Не удалось подключиться к базе денных", foreground = 'red')
-        label_dbsuc.place(x=10, y=5)
+    connect_database()
+
     try:
         #Считывание данных установки из таблицы установок
         cur = con.cursor()
@@ -336,8 +286,8 @@ def SUBD_get(window_card, text_card, SN):
             Label(window_card, text = ("Счетчики поверка: " + row[6])).place(x=250, y=85)
             Label(window_card, text = ("Дата поверки \n счетчика: \n" + str(row[7]))).place(x=480, y=130)
     except:
-        print("Ошибка в функции получения данных из базы по установке - пункт считывание параметров установки")
         Label(window_card, text = "Данные в таблице установок отсутсвуют!!!", foreground = 'red').place(x=10, y=25)
+
     try:
         # Считывание комментариев по данной установке
         cur.execute("SELECT date, time, author, commentary FROM public.comments WHERE serial_number = \'%s\' ORDER BY (date, time), time;" %SN)
@@ -350,18 +300,18 @@ def SUBD_get(window_card, text_card, SN):
             text_card.insert(1.0, "\n")
         con.close()
     except:
-        print("Ошибка в функции получения данных из базы по установке - пункт считывание комментариев")
         text_card.insert(1.0, "Данные в таблице комментариев отсутствуют")
 
 def button_color(SN, name_pc):
     try:
-        con = connect_DB()
+        connect_database()
         cur = con.cursor()
         cur.execute("SELECT alarms, (poverka_date - current_date) as poverka_days FROM public.installations WHERE serial_number = \'%s\';" %SN)
         rows = cur.fetchall()
         for row in rows:
             problems = row[0]
             poverka_days = row[1]
+        
         if problems == "work":
             button_c = ('#D3D3D3')
         elif problems == "not_work":
@@ -393,9 +343,9 @@ def button_color(SN, name_pc):
         con.close()
         return(button_c, poverka_days, poverka_c, button_pc)
     except:
-        print("Ошибка в функции получения цвета кнопок из БД!")
         Label(window, text = "Не удалось получить данные из базы данных!!!", bg = 'red').place(x=25, y=760)
    
+
 #Main program
 window = Tk()  
 window.title("Виртуальный цех        (by Jamigo)")  

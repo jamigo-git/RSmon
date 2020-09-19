@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 from tkinter import *  
 from tkinter.ttk import Combobox, Radiobutton, Entry, Spinbox 
 import tkinter.ttk as ttk
@@ -71,7 +70,7 @@ def comments(model, SN):
             con.close()
     except:
         print("Данные в таблице комментариев отсутствуют")
-    subprocess.Popen("C:\\Windows\\notepad.exe comments.txt")
+    subprocess.Popen("C:\\Windows\\notepad.exe D:\\myprogram\\bin\\journal\\comments.txt")
 
 # Фукнция открытия карточки компьютера
 def PC_card(model, SN, number_in_departament):
@@ -97,7 +96,7 @@ def PC_card(model, SN, number_in_departament):
     btn_wr = Button(window_card, text="Отправить", command = lambda: SUBD_push(window_card, text_wr, model, combo, sel.get(), text_card, number_in_departament))
     btn_wr.place(x=350, y=420)
     lbl01 = Label(window_card, text = "Выберите фамилию:").place(x=10, y=420)
-    combo = Combobox(window_card, width = 13, values = surnames)
+    combo = Combobox(window_card, width = 13, values = surname)
     combo.place(x=150, y=420)
     combo.current(3)
     lbl_alarms = LabelFrame(window_card, text = "Состояние")
@@ -194,7 +193,7 @@ def installation_card(model, SN, number_in_departament):
     btn_wr = Button(window_card, text="Отправить", command = lambda: SUBD_push(window_card, text_wr, SN, combo, sel.get(), text_card, number_in_departament))
     btn_wr.place(x=350, y=420)
     lbl01 = Label(window_card, text = "Выберите фамилию:").place(x=10, y=420)
-    combo = Combobox(window_card, width = 13, values = surnames)
+    combo = Combobox(window_card, width = 13, values = surname)
     combo.place(x=150, y=420)
     combo.current(3)
     lbl_alarms = LabelFrame(window_card, text = "Состояние")

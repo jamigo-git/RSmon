@@ -153,7 +153,7 @@ def serial_rx_UIPQ(parcel_tx):
         ser.setDTR(False)
         ser.setRTS(True)
         ser.write(parcel_tx.decode("hex"))
-        display_data_UIPQ = ser.read(77)      #read 75 bites from com-port
+        display_data_UIPQ = ser.read(77)      #read 75 bytes from com-port
         parcel_hex = bytearray(display_data_UIPQ)
         F_all =  [parcel_hex[6], parcel_hex[7]]
         F_all = struct.unpack('H', bytearray(F_all))
@@ -197,9 +197,9 @@ def serial_rx_UIPQ(parcel_tx):
         lbl_Ua = Label(lbl_rx_data_dc, text = ('Ua = ' + str(int(Ua)/10**int(parcel_hex[14])) + ' В')).place(x=5, y=5)
         lbl_Ub = Label(lbl_rx_data_dc, text = ('Ub = ' + str(int(Ub)/10**int(parcel_hex[15])) + ' В')).place(x=5, y=45)
         lbl_Uc = Label(lbl_rx_data_dc, text = ('Uc = ' + str(int(Uc)/10**int(parcel_hex[16])) + ' В')).place(x=5, y=85)
-        lbl_Ia = Label(lbl_rx_data_dc, text = ('Ia = ' + str(float(Ia)/10**int(parcel_hex[17])) + ' А')).place(x=5, y=25)
-        lbl_Ib = Label(lbl_rx_data_dc, text = ('Ib = ' + str(float(Ia)/10**int(parcel_hex[18])) + ' А')).place(x=5, y=65)
-        lbl_Ic = Label(lbl_rx_data_dc, text = ('Ic = ' + str(float(Ia)/10**int(parcel_hex[19])) + ' А')).place(x=5, y=105)
+        lbl_Ia = Label(lbl_rx_data_dc, text = ('Ia = ' + str(round(float(Ia)/10**int(parcel_hex[17]), 2)) + ' А')).place(x=5, y=25)
+        lbl_Ib = Label(lbl_rx_data_dc, text = ('Ib = ' + str(round(float(Ia)/10**int(parcel_hex[18]), 2)) + ' А')).place(x=5, y=65)
+        lbl_Ic = Label(lbl_rx_data_dc, text = ('Ic = ' + str(round(float(Ia)/10**int(parcel_hex[19]), 2)) + ' А')).place(x=5, y=105)
         lbl_Fi_Ua = Label(lbl_rx_data_dc, text = ('Q_Ua = ' + str(int(Fi_Ua)/1000) + ' \x60')).place(x=105, y=5)
         lbl_Fi_Ub = Label(lbl_rx_data_dc, text = ('Q_Ub = ' + str(int(Fi_Ub)/1000) + ' \x60')).place(x=105, y=45)
         lbl_Fi_Uc = Label(lbl_rx_data_dc, text = ('Q_Uc = ' + str(int(Fi_Uc)/1000) + ' \x60')).place(x=105, y=85)

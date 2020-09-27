@@ -53,7 +53,6 @@ def winreestr_pull():
     except Exception:
         print ('Com-port from window_installations registry unavailable, will use COM1 as default!!!')
         comport = ("COM1", 1)
-    
     return (comport)
 
 #read data from window_installations registry Inkotex 3ph
@@ -193,6 +192,74 @@ def serial_rx_ver(ser):
         lbl_error_com.place(x=5, y=5)
     ser.close()
 
+def serial_rx_UIPQ(parcel_tx):
+    try:
+        ser = serial.Serial(combo.get(), 9600, timeout = 1)
+        ser.setDTR(False)
+        ser.setRTS(True)
+        ser.write(parcel_tx.decode("hex"))
+        display_data_UIPQ = ser.read(37)      #read 75 bytes from com-port
+        parcel_hex = bytearray(display_data_UIPQ)
+        F_all =  [parcel_hex[4], parcel_hex[5]]
+        F_all = struct.unpack('H', bytearray(F_all))
+        U = [parcel_hex[12], parcel_hex[13], parcel_hex[14],'\x00']
+        U = str(struct.unpack('I', bytearray(U))).strip('(,)')
+        I = [parcel_hex[15], parcel_hex[16], parcel_hex[17],'\x00']
+        I = str(struct.unpack('I', bytearray(I))).strip('(,)')
+        Fi_U = [parcel_hex[18], parcel_hex[19], parcel_hex[20],'\x00']
+        Fi_U = str(struct.unpack('I', bytearray(Fi_U))).strip('(,)')
+        Fi_I = [parcel_hex[21], parcel_hex[22], parcel_hex[23],'\x00']
+        Fi_I = str(struct.unpack('I', bytearray(Fi_I))).strip('(,)')
+        P = [parcel_hex[24], parcel_hex[25], parcel_hex[26],'\x00']
+        P = str(struct.unpack('I', bytearray(P))).strip('(,)')
+        R = [parcel_hex[27], parcel_hex[28], parcel_hex[29],'\x00']
+        R = str(struct.unpack('I', bytearray(R))).strip('(,)')
+        lbl_clear = Label(lbl_rx_data_dc, text = ('                                                     \n                                                            \n                                                         \n                                                        \n                                                                 \n                                                           \n                                                                   \n                                                                          ')).place(x=5, y=5) 
+        lbl_U = Label(lbl_rx_data_dc, text = ('U = ' + str(int(U)/10**int(parcel_hex[9])) + ' В')).place(x=5, y=5)
+        lbl_I = Label(lbl_rx_data_dc, text = ('I = ' + str(round(float(I)/10**int(parcel_hex[10]), 2)) + ' А')).place(x=5, y=25)
+        lbl_Fi_U = Label(lbl_rx_data_dc, text = ('Q_U = ' + str(int(Fi_U)/1000) + ' \x60')).place(x=105, y=5)
+        lbl_Fi_I = Label(lbl_rx_data_dc, text = ('Q_I = ' + str(int(Fi_I)/1000) + ' \x60')).place(x=105, y=25)
+        lbl_P = Label(lbl_rx_data_dc, text = ('P = ' + str(int(P)/10**int(parcel_hex[11])) + ' Вт')).place(x=205, y=5)
+        lbl_R = Label(lbl_rx_data_dc, text = ('R = ' + str(int(R)/10**int(parcel_hex[11])) + ' Вт')).place(x=205, y=25)
+        
+    except Exception:
+        lbl_error_com = Label(lbl_rx_data_dc, text = "Неть данных", foreground = 'red')
+        lbl_error_com.place(x=5, y=5)
+
+    ser.close()
+
+#Класс циклично опрашивает счетчик пока не нажата клавиша Стоп
+class cycle_tx():
+    def __init__(self):
+        self.white = True
+        self.second = 0
+        btn_cycle = Button(lbl_rx_data_dc, text="Цикл 5c", command = self.serial_tx_cycle).place(x=5, y=180)
+        btn_stop = Button(lbl_rx_data_dc, text="Стоп", command = self.serial_stop).place(x=130, y=180)
+        self.time = None
+    
+    #Метод цикличной отправки/приема пакетов и отображения полученных данных
+    def serial_tx_cycle(self): 
+        serial_rx_UIPQ('8116053023')
+        self.second +=1
+        
+        if self.white == True: # Индикация циклической посылки
+            white = Canvas(lbl_rx_data_dc, width=10, height=10, bg = 'white')
+            white.place(x=100, y=180)
+            self.white = False
+        else:
+            white = Canvas(lbl_rx_data_dc, width=10, height=10, bg = 'black')
+            white.place(x=100, y=180)
+            self.white = True
+        self.time = window_installation.after(5000, self.serial_tx_cycle) #здесь устанавливается время между посылками (по умолчанию задал 5с)
+
+    #Функция отключает цикл отправки пакетов
+    def serial_stop(self): 
+        if self.time is not None:
+            window_installation.after_cancel(self.time)
+            self.time = None
+        else:
+            return
+
 window_installation = Tk()  
 window_installation.title("Program for diagnostic CLOU 1F (by Jamigo)")  
 window_installation.geometry('600x600')
@@ -256,9 +323,11 @@ btn_opros.pack(side = BOTTOM)
 btn_opros = Button(lbl_version, text="Опросить блок уп", command = lambda: serial_tx_ver(2))
 btn_opros.pack(side = BOTTOM)
 
-lbl_rx_data_dc = LabelFrame(window_installation, text = "Принятые со счетчика (CL311v2) данные")
+lbl_rx_data_dc = LabelFrame(window_installation, text = "Принятые со счетчика (CL111) данные")
 lbl_rx_data_dc.place(x=15, y=320, width = 350, heigh = 240)
 
-
+btn_reload_data = Button(lbl_rx_data_dc, text="Запросить", command = lambda: serial_rx_UIPQ('8116053023'))
+btn_reload_data.place(x=250, y=180)
+cycle = cycle_tx() #активируем класс цикла опроса счетчика (данных напряжения тока)
 
 window_installation.mainloop()

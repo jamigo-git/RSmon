@@ -10,23 +10,7 @@ import winreg
 import psycopg2
 from idlelib.tooltip import Hovertip
 import subprocess
-import configparser
 import ipaddress
-
-config = configparser.ConfigParser()
-config.read("config.ini")
-
-surnames = config['people']['engineers']
-surnames = [element.strip("'[]") for element in surnames.split(", ")]
-
-#BD_database= config['data_base']['database']
-#BD_user= config['data_base']['user']
-#BD_password= config['data_base']['password']
-#BD_host= config['data_base']['host']
-#BD_port= config['data_base']['port']
-#connectionBD = "dbname=\"%s\", user=\"%s\", password=\"%s\", host=\"%s\", port=\"%s\"" % (BD_database, BD_user, BD_password, BD_host, BD_port)
-#con = psycopg2.connect(connectionBD)
-#con.close()
 
 #Работа с буфером по клавишам Ctr-C, Ctr-V, Ctr-X
 def _onKeyRelease(event):   
@@ -88,28 +72,8 @@ def PC_card(model, SN, number_in_departament):
     text_wr = Text(window_card, width=50, height=5)
     text_wr.place(x=10, y=320)
     text_wr.bind("<Button-3>")
-    Label(window_card, text = ("Новый IP:")).place(x=480, y=190)
-    IP_new = Text(window_card, width=13, height=1)
-    IP_new.place(x=480, y=215)
-    IP_new.insert(1.0, '192.168.0.0')
-    IP_new_wr = Button(window_card, text="Записать", command = lambda: SUBD_push_one(window_card, IP_new, SN, model, "pc"))
-    IP_new_wr.place(x=490, y=240)
-    btn_wr = Button(window_card, text="Отправить", command = lambda: SUBD_push(window_card, text_wr, model, combo, sel.get(), text_card, number_in_departament))
-    btn_wr.place(x=350, y=420)
-    lbl01 = Label(window_card, text = "Выберите фамилию:").place(x=10, y=420)
-    combo = Combobox(window_card, width = 13, values = surnames)
-    combo.place(x=150, y=420)
-    combo.current(3)
-    lbl_alarms = LabelFrame(window_card, text = "Состояние")
-    lbl_alarms.place(x = 470, y=300, width = 140, height = 120)
-    sel = IntVar(lbl_alarms)
-    sel.set(1)
-    rad_alarm1 = Radiobutton(lbl_alarms, text='В работе', variable=sel, value=1)
-    rad_alarm1.place(x=5, y=0)
-    rad_alarm2 = Radiobutton(lbl_alarms, text='Не работает', variable=sel, value=2)
-    rad_alarm2.place(x=5, y=30)                
-    rad_alarm3 = Radiobutton(lbl_alarms, text='Есть проблемы', variable=sel, value=3)
-    rad_alarm3.place(x=5, y=60)
+
+    
 
 #Функция получения данных о компьютере из БД
 def SUBD_get_PC(model, window_card, text_card, SN):
@@ -185,120 +149,10 @@ def installation_card(model, SN, number_in_departament):
     Label(window_card, text = ("Ваш комментарий:")).place(x=10, y=300)
     text_wr = Text(window_card, width=50, height=5)
     text_wr.place(x=10, y=320)
-    Label(window_card, text = ("Новая дата:")).place(x=480, y=190)
-    poverka_text = Text(window_card, width=10, height=1)
-    poverka_text.place(x=480, y=215)
-    poverka_text.insert(1.0, 'ГГГГ-ММ-ДД')
-    poverka_wr = Button(window_card, text="Записать", command = lambda: SUBD_push_one(window_card, poverka_text, SN, number_in_departament, "installations"))
-    poverka_wr.place(x=490, y=240)
-    btn_wr = Button(window_card, text="Отправить", command = lambda: SUBD_push(window_card, text_wr, SN, combo, sel.get(), text_card, number_in_departament))
-    btn_wr.place(x=350, y=420)
-    lbl01 = Label(window_card, text = "Выберите фамилию:").place(x=10, y=420)
-    combo = Combobox(window_card, width = 13, values = surnames)
-    combo.place(x=150, y=420)
-    combo.current(3)
-    lbl_alarms = LabelFrame(window_card, text = "Состояние")
-    lbl_alarms.place(x = 470, y=300, width = 140, height = 120)
-    sel = IntVar(lbl_alarms)
-    sel.set(1)
-    rad_alarm1 = Radiobutton(lbl_alarms, text='В работе', variable=sel, value=1)
-    rad_alarm1.place(x=5, y=0)
-    rad_alarm2 = Radiobutton(lbl_alarms, text='Не работает', variable=sel, value=2)
-    rad_alarm2.place(x=5, y=30)                
-    rad_alarm3 = Radiobutton(lbl_alarms, text='Есть проблемы', variable=sel, value=3)
-    rad_alarm3.place(x=5, y=60)
+   
+  
         
-
-# Функция записи комментариев в БД (установки)
-def SUBD_push(window_card, text_wr, SN, combo, alarms, text_card, number_in_departament):
-    try:
-        # Подключение к БД
-        con = connect_DB()
-        Label(window_card, text = "Подключение к базе данных: ОК            ", foreground = 'green').place(x=10, y=450)
-    except:
-        print("Ошибка в функции записи комментариев в БД по установке, невозможно подключиться к базе данных")
-        Label(window_card, text = "Подключение к базе данных отсутсвует", foreground = 'red').place(x=10, y=450)
-    try:
-        #Запись комментария в таблицу БД
-        if alarms == 1:
-            alarms = 'work'
-        elif alarms == 2:
-            alarms = 'not_work'
-        else:
-            alarms = 'is_problems'
-        cur = con.cursor()
-        date = datetime.datetime.now().strftime("%d-%m-%Y")
-        time = datetime.datetime.now().strftime("%H:%M:%S")    
-        author = combo.get()
-        comment = text_wr.get(1.0, END).strip()
-        cur.execute("INSERT INTO public.comments (date, author, commentary, serial_number, time, alarms, number_in_departament) VALUES (%s, %s, %s, %s, %s, %s, %s);", (date, author, comment, SN, time, alarms, number_in_departament))
-        if 'PC' in SN:
-            cur.execute("UPDATE public.pc SET alarms=%s WHERE name_pc = %s; ", (alarms, SN))
-        else:    
-            cur.execute("UPDATE public.installations SET alarms=%s WHERE serial_number = %s; ", (alarms, SN))
-        con.commit() 
-        Label(window_card, text = "Данные успешно записаны!!!", foreground = 'green').place(x=10, y=450)
-        #Считывание (обновление) данных в поле комментариев
-        text_card.delete(1.0, END)
-        cur.execute("SELECT date, time, author, commentary FROM public.comments WHERE serial_number = \'%s\' ORDER BY (date, time);" %SN)
-        rows = cur.fetchall()
-        for row in rows:
-            text_card.insert(1.0, "\nДата: " + str(row[0]))
-            text_card.insert(1.0, "\nВремя: " + str(row[1]))
-            text_card.insert(1.0, "\nАвтор: " + row[2])
-            text_card.insert(1.0, "\nКомментарий: " + row[3])
-            text_card.insert(1.0, "\n")
-        con.close()
-    except:
-        print("Ошибка в функции записи комментариев в БД по установке")
-        Label(window_card, text = "Не удалось записать данные в базу данных!!!", foreground = 'red').place(x=10, y=450)
-    
-# Функция записи даты поверки (и других одиночных полей)
-def SUBD_push_one(window_card, data_bd, SN, number_in_departament, table):
-    try:
-        # Подключение к БД
-        con = connect_DB()
-        Label(window_card, text = "Подключение к базе данных: ОК            ", foreground = 'green').place(x=10, y=450)
-    except:
-        print("Ошибка в функции записи даты поверки первый модуль")
-        Label(window_card, text = "Подключение к базе данных отсутствует", foreground = 'red').place(x=10, y=450)
-    
-    if table == "installations": #Запись даты поверки
-        date_usr =  data_bd.get(1.0, END).strip()
-        if date_usr == "ГГГГ-ММ-ДД":
-            Label(window_card, text = "Введите дату", foreground = 'red').place(x=480, y=270)
-        else:
-            try:
-                date(int(date_usr[0:4]),int(date_usr[5:7]),int(date_usr[8:10]))
-                Label(window_card, text = "Формат ок", foreground = 'green').place(x=480, y=270)
-                cur = con.cursor()
-                cur.execute("UPDATE public.installations SET poverka_date=%s WHERE serial_number = %s; ", (date_usr, SN))
-                con.commit() 
-                con.close()
-                Label(window_card, text = "Дата записана", foreground = 'green').place(x=480, y=270)
-            except:
-                print("Ошибка в функции записи даты поверки не верный формат даты")
-                Label(window_card, text = "Не формат!", foreground = 'red').place(x=480, y=270)
-    elif table == "pc":
-        new_IP =  data_bd.get(1.0, END).strip()
-        if new_IP == "192.168.0.0":
-            Label(window_card, text = "Введите IP-адрес", foreground = 'red').place(x=480, y=270)
-        else:
-            try:
-                ipaddress.ip_address(new_IP)
-                Label(window_card, text = "Формат ок", foreground = 'green').place(x=480, y=270)
-                cur = con.cursor()
-                cur.execute("UPDATE public.pc SET ip=%s WHERE serial_number = %s; ", (new_IP, SN))
-                con.commit() 
-                con.close()
-                Label(window_card, text = "Новый IP записан", foreground = 'green').place(x=480, y=270)
-            except:
-                print("Ошибка в функции записи IP не верный формат IP")
-                Label(window_card, text = "Не формат!", foreground = 'red').place(x=480, y=270)
-    else:
-        Label(window_card, text = "Не удалось записать данные в базу данных!!!", foreground = 'red').place(x=10, y=450)
-        print("Ошибка в функции записи даты поверки второй модуль")
-       
+      
 # Функция получения данных из базы по установке
 def SUBD_get(window_card, text_card, SN):
     try:
@@ -398,7 +252,7 @@ def button_color(SN, name_pc):
    
 #Main program
 window = Tk()  
-window.title("Виртуальный цех        (by Jamigo)")  
+window.title("Виртуальный цех (только чтение)       (by Jamigo)")  
 window.geometry('1400x800')
 #Включаем подержку нажатий клавиш Ctr-C, Ctr-V, Ctr-X
 window.bind_all("<Key>", _onKeyRelease, "+") 
@@ -406,14 +260,12 @@ window.bind_all("<Key>", _onKeyRelease, "+")
 #Дополнительные кнопки 
 commentas = Button(window, text="Все комменты", width = 13, command = lambda: comments('080798', 'ALL'))
 commentas.place(x=1270, y=20)
-scheme_office_1 = Button(window, text="Схема стек.", width = 13, command = lambda: subprocess.Popen("C:\\Program Files\\OpenOffice 4\\program\\sdraw.exe D:\\myprogram\\bin\\journal\\scheme1.odg"))
+scheme_office_1 = Button(window, text="Схема стек.", width = 13, command = lambda: subprocess.Popen("C:\\Program Files\\OpenOffice 4\\program\\sdraw.exe scheme1.odg"))
 scheme_office_1.place(x=1270, y=50)
-scheme_office_2 = Button(window, text="Схема A2", width = 13, command = lambda: subprocess.Popen("C:\\Program Files\\OpenOffice 4\\program\\sdraw.exe D:\\myprogram\\bin\\journal\\scheme2.odg"))
+scheme_office_2 = Button(window, text="Схема A2", width = 13, command = lambda: subprocess.Popen("C:\\Program Files\\OpenOffice 4\\program\\sdraw.exe scheme2.odg"))
 scheme_office_2.place(x=1270, y=80)
-history = Button(window, text="Изменения ПО", width = 13, command = lambda: subprocess.Popen("C:\\Windows\\notepad.exe D:\\myprogram\\bin\\journal\\history.txt"))
-history.place(x=1270, y=110)
-programs = Button(window, text="Программы", width = 13, command = lambda: subprocess.Popen("C:\\Windows\\explorer.exe D:\\MyProgram\\BIN\\dist"))
-programs.place(x=1270, y=140)
+
+
 
 #Элементы для лучшей визуализации
 Right_wall = Canvas(window, width=10, height=1000, bg = 'green').place(x=1230, y=5)

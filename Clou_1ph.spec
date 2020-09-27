@@ -3,8 +3,8 @@
 block_cipher = None
 
 
-a = Analysis(['journal.py'],
-             pathex=['D:\\MyProgram\\BIN\\journal'],
+a = Analysis(['Clou_1ph.pyw'],
+             pathex=['D:\\MyProgram\\BIN'],
              binaries=[],
              datas=[],
              hiddenimports=[],
@@ -21,12 +21,12 @@ exe = EXE(pyz,
           a.scripts,
           [],
           exclude_binaries=True,
-          name='journal',
+          name='Clou_1ph',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          console=True )
+          console=False )
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
@@ -34,4 +34,4 @@ coll = COLLECT(exe,
                strip=False,
                upx=True,
                upx_exclude=[],
-               name='journal')
+               name='Clou_1ph')
